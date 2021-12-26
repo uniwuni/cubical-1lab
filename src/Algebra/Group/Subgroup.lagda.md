@@ -12,14 +12,34 @@ module Algebra.Group.Subgroup where
 
 # Subgroups
 
-A __subgroup__ of a group $G$ is defined as a subset of the carrier set
+A __subgroup__ of a group $G$ is defined as a injective homomorphism
+into $G$. This simplifies a lot of definitions, as there's no subtype
+issues to be handled. Nonetheless, we also show the equivalence to the
+alternative definition of a subgroup as a subset of the carrier set
 of $G$ that contains the group's unit, is closed under the group's
 operation as well as its inverses. 
 
 ```agda
-record Subgroup {ℓ ℓ'} {A : Type ℓ} (group : GroupOn A)
+record Subgroup {ℓ ℓ'} (group : Group ℓ)
   : Type (ℓ ⊔ lsuc ℓ') where
-  open GroupOn group
+  private
+    A = group .fst
+  open GroupOn (group .snd)
+  field
+    subgroup : Group ℓ'
+    inclusion-hom : GroupHom subgroup group
+    inclusion-hom-is-embedding : isEmbedding (inclusion-hom .fst)
+
+  subgroupContains : Predicate A (ℓ ⊔ ℓ')
+  subgroupContains = embedding-set-image
+    (hasIsSet (hasIsMagma (hasIsSemigroup hasIsMonoid)))
+    (inclusion-hom .fst , inclusion-hom-is-embedding)
+
+record SubgroupPred {ℓ ℓ'} (group : Group ℓ)
+  : Type (ℓ ⊔ lsuc ℓ') where
+  private
+    A = group .fst
+  open GroupOn (group .snd)
   field
     subgroup-pred : Predicate A ℓ'
     subgroup-closed-operation : isClosed-binary subgroup-pred .contains _⋆_
@@ -27,8 +47,8 @@ record Subgroup {ℓ ℓ'} {A : Type ℓ} (group : GroupOn A)
     subgroup-contains-unit : subgroup-pred .contains unit
 ```
 
-From this definition, we can also extract the notion of subgroups as
-groups equipped with an injective homomorphism into $G$.
+From the predicate definition, we can also recover subgroups in the
+morphism sense.
 
 ```agda
   induced-group : GroupOn (Σ (subgroup-pred .contains))
@@ -53,9 +73,53 @@ groups equipped with an injective homomorphism into $G$.
   induced-group .GroupOn.hasIsGroup .isGroup.inverseʳ =
     Σ≡Prop (subgroup-pred .isPointwiseProp) inverseʳ
 
-  induced-group-hom : GroupHom (_ , induced-group) (_ , group)
+  induced-group-hom : GroupHom (_ , induced-group) group
   induced-group-hom .fst = fst
   induced-group-hom .snd .pres-⋆ (x , prf-x) (y , prf-y) = refl
 
   induced-group-hom-is-embedding : isEmbedding (induced-group-hom .fst)
   induced-group-hom-is-embedding = embed subgroup-pred .snd
+
+  induced-subgroup : Subgroup {ℓ' = ℓ' ⊔ ℓ} group
+  induced-subgroup .Subgroup.subgroup = _ , induced-group
+  induced-subgroup .Subgroup.inclusion-hom = induced-group-hom
+  induced-subgroup .Subgroup.inclusion-hom-is-embedding = induced-group-hom-is-embedding
+  
+open Subgroup public
+```
+
+This also works in the opposite direction - every subgroup given by a
+embedding defines a subset of the original group that is a subgroup
+in the set-based sense.
+
+```agda
+module _ {ℓ ℓ'} {G : Group ℓ} where
+  open SubgroupPred
+  Subgroup→SubgroupPred :
+    Subgroup {ℓ' = ℓ'} G → SubgroupPred {ℓ' = ℓ ⊔ ℓ'} G
+  Subgroup→SubgroupPred sg .subgroup-pred = subgroupContains sg
+  Subgroup→SubgroupPred sg .subgroup-closed-operation x y
+    (prex , xprf) (prey , yprf) = (prex ⋆ prey) ,
+       sg .inclusion-hom .snd .pres-⋆ prex prey ∙
+         ap₂ (G .snd .GroupOn._⋆_) xprf yprf
+    where open GroupOn (sg .subgroup .snd)
+  Subgroup→SubgroupPred sg .subgroup-closed-inverse x (prex , xprf) =
+    inverse prex ,
+      pres-inv (sg .inclusion-hom .snd) prex ∙
+        ap (GroupOn.inverse (G .snd)) xprf 
+     where open GroupOn (sg .subgroup .snd)
+  Subgroup→SubgroupPred sg .subgroup-contains-unit =
+    (GroupOn.unit (sg .subgroup .snd)) , pres-id (sg .inclusion-hom .snd)
+```
+
+We also define the __image__ subgroup given by a group homomorphism. This
+definition is essential to a lot of group theory, for example, the
+isomorphism theorems.
+
+```agda
+group-image : ∀ {ℓ ℓ'} {A : Σ (GroupOn {ℓ = ℓ})} {B : Σ (GroupOn {ℓ = ℓ'})}
+  → GroupHom A B → Subgroup {ℓ' = ℓ ⊔ ℓ'} B
+group-image (f , ishom) .subgroup = ?
+group-image (f , ishom) .inclusion-hom = ?
+group-image (f , ishom) .inclusion-hom-is-embedding = ?
+```
