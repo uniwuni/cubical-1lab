@@ -65,3 +65,11 @@ propositions, so biimplication becomes equivalence:
 injective-sets→embedding Aset Bset f injective =
   isIso→isEquiv (iso injective (λ _ → Bset _ _ _ _) (λ _ → Aset _ _ _ _))
 ```
+
+Only by deconstructing the equivalence, we can also show that all
+embeddings are injective.
+
+```agda
+embedding→injective : (f : A → B) → isEmbedding f → injective f
+embedding→injective f embed proof = isIso.inv (isEquiv→isIso embed) proof
+```
