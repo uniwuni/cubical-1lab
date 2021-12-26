@@ -158,7 +158,8 @@ it `preserves the multiplication`{.Agda ident=pres-⋆}.
 
 ```agda
 record
-  isGroupHom {ℓ} (A B : Σ (GroupOn {ℓ = ℓ})) (e : A .fst → B .fst) : Type ℓ where
+  isGroupHom {ℓ ℓ'} (A : Σ (GroupOn {ℓ = ℓ})) (B : Σ (GroupOn {ℓ = ℓ'}))
+    (e : A .fst → B .fst) : Type (ℓ ⊔ ℓ') where
   private
     module A = GroupOn (A .snd)
     module B = GroupOn (B .snd)
@@ -190,6 +191,10 @@ identity as well as inverses:
                  B.inverseʳ
                  
 open isGroupHom public
+
+GroupHom : ∀ {ℓ ℓ'} (A : Σ (GroupOn {ℓ = ℓ})) → (B : Σ (GroupOn {ℓ = ℓ'})) →
+  Type (ℓ ⊔ ℓ')
+GroupHom A B = Σ (isGroupHom A B)
 ```
 
 We can also derive the necessary properties to later show that group
