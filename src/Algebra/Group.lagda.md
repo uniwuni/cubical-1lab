@@ -168,7 +168,7 @@ record
 ```
 
 A tedious calculation shows that this is sufficient to preserve the
-identity:
+identity as well as inverses:
 
 ```agda
   private
@@ -183,6 +183,37 @@ identity:
     (e 1A B.⋆ e 1A) B.⋆ B.inverse (e 1A) ≡⟨ ap₂ B._⋆_ (sym (pres-⋆ _ _) ∙ ap e A.idˡ) refl ⟩ 
     e 1A B.⋆ B.inverse (e 1A)            ≡⟨ B.inverseʳ ⟩ 
     1B                                   ∎
+
+  pres-inv : (x : _) → e (A.inverse x) ≡ B.inverse (e x)
+  pres-inv x = monoid-inverse-unique B.hasIsMonoid (e x) (e (A.inverse x)) (B.inverse (e x))
+                 (sym (pres-⋆ _ _) ∙ ap e A.inverseˡ ∙ pres-id)
+                 B.inverseʳ
+                 
+open isGroupHom public
+```
+
+We can also derive the necessary properties to later show that group
+homomorphisms form a (concrete) category, meaning that we show that they
+are closed under composition of functions and include the identity
+function.
+
+```agda
+
+id-is-hom : ∀ {ℓ} {A : Group ℓ} → isGroupHom A A id
+id-is-hom .isGroupHom.pres-⋆ = λ x y → refl
+
+∘-preserves-hom : ∀ {ℓ} {A B C : Group ℓ} {f} {g}
+  → isGroupHom B C g → isGroupHom A B f → isGroupHom A C (g ∘ f)
+∘-preserves-hom {A = A} {B = B} {C = C} {f = f} {g = g} is-hom-g is-hom-f
+    .isGroupHom.pres-⋆ x y =
+  g (f (x A.⋆ y)) ≡⟨ ap g (is-hom-f .pres-⋆ x y) ⟩
+  g (f x B.⋆ f y) ≡⟨ is-hom-g .pres-⋆ (f x) (f y) ⟩
+  g (f x) C.⋆ g (f y) ∎
+  where module A = GroupOn (A .snd)
+        module B = GroupOn (B .snd)
+        module C = GroupOn (C .snd)
+    
+            
 ```
 
 An `equivalence`{.Agda ident=_≃_} is an equivalence of groups when its
