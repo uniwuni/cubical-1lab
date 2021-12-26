@@ -52,4 +52,29 @@ module _ {ℓ ℓ'} {A : Type ℓ} (P : Predicate A ℓ') where
   isClosed-binary .isPointwiseProp f x y =
     funext λ x → funext λ y → funext λ prf → funext λ prf2 →
       P .isPointwiseProp (f x y) _ _
+```
 
+On any type, we can also define the two very basic subsets: the empty set,
+whose predicate does not apply to any element, as well as the "universe"
+subset, whose predicate always holds.
+
+```agda
+∅ univ : ∀ {ℓ ℓ'} {A : Type ℓ} → Predicate A ℓ'
+∅ {ℓ' = ℓ'} .contains = λ x → Lift ℓ' ⊥
+∅ .isPointwiseProp a () ()
+
+univ {ℓ' = ℓ'} .contains = λ x → Lift ℓ' ⊤
+univ .isPointwiseProp a (lift tt) (lift tt) = refl
+```
+
+This also allows us to show that the embedding induced by `univ`{.Agda}
+is an equivalence.
+
+```agda
+univ-embed≃ : ∀ {ℓ ℓ'} {A : Type ℓ} → isEquiv
+  (Predicate.embed (univ {ℓ' = ℓ'} {A = A}) .fst)
+univ-embed≃ = isIso→isEquiv
+  (iso (λ z → z , lift tt)
+       (λ x → refl)
+       (λ x → refl))
+```
