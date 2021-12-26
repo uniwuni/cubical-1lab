@@ -211,9 +211,7 @@ id-is-hom .isGroupHom.pres-⋆ = λ x y → refl
   g (f x) C.⋆ g (f y) ∎
   where module A = GroupOn (A .snd)
         module B = GroupOn (B .snd)
-        module C = GroupOn (C .snd)
-    
-            
+        module C = GroupOn (C .snd)            
 ```
 
 An `equivalence`{.Agda ident=_≃_} is an equivalence of groups when its
