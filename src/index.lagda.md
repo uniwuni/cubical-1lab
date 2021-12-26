@@ -221,29 +221,81 @@ are developed under the `1Lab` namespace. Start here:
 open import 1Lab.Type -- Universes
 
 open import 1Lab.Path          -- Path types
-open import 1Lab.Path.Partial  -- Partial elements
 open import 1Lab.Path.Groupoid -- Groupoid structure of types
 
-open import 1Lab.Equiv           -- Contractible fibre equivalences, isomorphisms
-open import 1Lab.Equiv.Biinv     -- Biinvertible maps
-open import 1Lab.Equiv.Embedding -- Embeddings
-open import 1Lab.Equiv.Fibrewise -- Fibrewise equivalences
+open import 1Lab.Equiv             -- “Contractible fibres” equivalences
+open import 1Lab.Equiv.Biinv       -- Biinvertible maps
+open import 1Lab.Equiv.FromPath    -- Transport is an equivalence, cubically
+open import 1Lab.Equiv.Embedding   -- Embeddings
+open import 1Lab.Equiv.Fibrewise   -- Fibrewise equivalences
+open import 1Lab.Equiv.HalfAdjoint -- Half-adjoint equivalences
 
 open import 1Lab.HLevel          -- h-levels
 open import 1Lab.HLevel.Sets     -- K, Rijke's theorem, Hedberg's theorem
 open import 1Lab.HLevel.Retracts -- Closure of h-levels under retractions/isos
+open import 1Lab.HLevel.Universe -- The type of n-types is a (n+1)-type
 
-open import 1Lab.Univalence     -- Equivalence is equivalent to equality
-open import 1Lab.Univalence.SIP -- Univalence + preservation of structure
+open import 1Lab.Univalence            -- Equivalence is equivalent to equality
+open import 1Lab.Univalence.SIP        -- Univalence + preservation of structure
+open import 1Lab.Univalence.SIP.Auto   -- Derive isUnivalent for families of types
+open import 1Lab.Univalence.SIP.Record -- Derive isUnivalent for record types
 
-open import 1Lab.Data.Dec            -- Decidable types, discrete types
-open import 1Lab.Data.Bool           -- Booleans and their automorphisms
-open import 1Lab.Data.List           -- Finite lists
-open import 1Lab.Data.Relation.Order -- Prop-valued ordering relations
+open import 1Lab.Type.Dec   -- Decidable types, discrete types
+open import 1Lab.Type.Pi    -- Properties of dependent products
+open import 1Lab.Type.Sigma -- Properties of dependent coproducts
 
-open import 1Lab.HIT.S1              -- The circle as a cell complex
-open import 1Lab.HIT.Truncation      -- Propositional truncation
+open import 1Lab.HIT.S1         -- The circle as a cell complex
+open import 1Lab.HIT.Sphere     -- Spheres of arbitrary dimension
+open import 1Lab.HIT.Sinfty     -- The infinity-dimensional sphere
+open import 1Lab.HIT.Suspension -- The suspension operation
+open import 1Lab.HIT.Truncation -- Propositional truncation
 
-open import 1Lab.Counterexamples.IsIso -- Counterexample: isIso is not a prop
+open import 1Lab.Counterexamples.IsIso   -- Counterexample: isIso is not a prop
 open import 1Lab.Counterexamples.Russell -- Counterexample: Russell's paradox
+open import 1Lab.Counterexamples.Sigma   -- Counterexample: Sigma is not prop
+```
+
+## Data types
+
+The `Data` namespace contains definitions of oft-used data types, which
+are fundamental to the rest of the development but not “basic type
+theory”. These modules contain (or re-export) the types themselves,
+useful operations on them, characterisation of their path spaces, etc.
+
+```agda
+open import Data.Nat  -- The natural numbers
+open import Data.Int  -- The integers
+open import Data.Sum  -- Coproduct types
+open import Data.Bool -- The booleans
+open import Data.List -- Finite lists
+```
+
+<!--
+# Relation
+
+Here, we define often-used types of relations like partial orders as well as
+actual relations themselves, for example, lexicographic orderings on lists.
+
+```agda
+open import Relation.Order               -- Prop-valued ordering relations
+open import Relation.Order.Lexicographic -- Lexicographic orderings
+```
+-->
+
+# Algebra
+
+In the `Algebra` namespace, the theory of universal algebra is developed
+from a univalent perspective. Specifically, every definition of an
+algebraic structure comes with an associated proof that it is univalent
+--- concretely, equality of groups is group isomorphism (for instance).
+
+```agda
+open import Algebra.Magma                      -- Binary operations 
+open import Algebra.Magma.Unital               -- Operations with two-sided units
+open import Algebra.Magma.Unital.EckmannHilton -- The Eckmann-Hilton argument
+
+open import Algebra.Semigroup                  -- Semigroups (associative magmas)
+open import Algebra.Monoid                     -- Monoids as unital semigroups
+open import Algebra.Group                      -- Groups as monoids with inverses
+open import Algebra.Group.Cayley               -- Cayley's theorem
 ```
