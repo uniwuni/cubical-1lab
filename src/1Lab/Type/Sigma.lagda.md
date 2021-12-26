@@ -136,7 +136,7 @@ When `P` is a family of propositions, it is sound to regard `Σ[ x ∈ A ]
 characterised uniquely by equality of the first projections:
 
 ```agda
-Σ≡Prop : {B : A → Type ℓ}
+Σ≡Prop : {B : A → Type ℓ₁}
        → (∀ x → isProp (B x))
        → {x y : Σ B}
        → (x .fst ≡ y .fst) → x ≡ y
@@ -150,7 +150,7 @@ from the input, or from `Σ≡Path`{.Agda}.
 
 ```agda
 isEquiv-Σ≡Prop
-  : {B : A → Type ℓ}
+  : {B : A → Type ℓ₁}
   → (bp : ∀ x → isProp (B x))
   → {x y : Σ B}
   → isEquiv (Σ≡Prop bp {x} {y})
