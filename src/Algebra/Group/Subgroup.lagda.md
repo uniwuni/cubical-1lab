@@ -110,16 +110,38 @@ module _ {ℓ ℓ'} {G : Group ℓ} where
      where open GroupOn (sg .subgroup .snd)
   Subgroup→SubgroupPred sg .subgroup-contains-unit =
     (GroupOn.unit (sg .subgroup .snd)) , pres-id (sg .inclusion-hom .snd)
+
 ```
 
 We also define the __image__ subgroup given by a group homomorphism. This
 definition is essential to a lot of group theory, for example, the
 isomorphism theorems.
 
+
 ```agda
-group-image : ∀ {ℓ ℓ'} {A : Σ (GroupOn {ℓ = ℓ})} {B : Σ (GroupOn {ℓ = ℓ'})}
-  → GroupHom A B → Subgroup {ℓ' = ℓ ⊔ ℓ'} B
-group-image (f , ishom) .subgroup = ?
-group-image (f , ishom) .inclusion-hom = ?
-group-image (f , ishom) .inclusion-hom-is-embedding = ?
+module _ where
+  open SubgroupPred
+  group-image' : ∀ {ℓ ℓ'} {A : Σ (GroupOn {ℓ = ℓ})} {B : Σ (GroupOn {ℓ = ℓ'})}
+    → GroupHom A B → SubgroupPred {ℓ' = ℓ ⊔ ℓ'} B
+  group-image' (f , ishom) .subgroup-pred = image f
+  group-image' {A = A} {B = B} (f , ishom) .subgroup-closed-operation x y
+    (inc (ax , eqx)) (inc (ay , eqy)) =
+    inc (A .snd .GroupOn._⋆_ ax ay ,
+        ishom .pres-⋆ ax ay ∙ ap₂ (B .snd .GroupOn._⋆_) eqx eqy)
+  group-image' {A = A} {B = B} (f , ishom) .subgroup-closed-operation x y
+    (inc (prex , prfx)) (squash prfy prfy₁ i) =
+      isProp→PathP (λ i → isProp-∥-∥)
+        {!acquire-preimage-of-product prfy!} {!!} i
+    where open GroupOn (A .snd)
+          acquire-preimage-of-product :
+            ∃ _ (λ x₁ → f x₁ ≡ y) →
+            ∃ _ (λ x₁ → f x₁ ≡ B .snd .GroupOn._⋆_ x y)
+          acquire-preimage-of-product = ∥-∥-map {A = Σ (λ x₁ → f x₁ ≡ y)}
+            (λ {(prey' , prfy') → (prex ⋆ prey' ,
+              ishom .pres-⋆ prex prey' ∙ ap₂
+                (B .snd .GroupOn._⋆_) prfx prfy')})
+  group-image' (f , ishom) .subgroup-closed-operation x y (squash prfx prfx₁ i) (inc x₁) = {!!}
+  group-image' (f , ishom) .subgroup-closed-operation x y (squash prfx prfx₁ i) (squash prfy prfy₁ i₁) = {!!}
+  group-image' (f , ishom) .subgroup-closed-inverse = {!!}
+  group-image' (f , ishom) .subgroup-contains-unit = {!!}
 ```

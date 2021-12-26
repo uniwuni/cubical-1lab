@@ -48,6 +48,32 @@ whenever it is a family of propositions, by providing a case for
   isProp→PathP (λ j → pprop (squash x y j)) (∥-∥-elim pprop incc x)
                                             (∥-∥-elim pprop incc y)
                                             i
+
+∥-∥-elim₂ : ∀ {ℓ ℓ' ℓ''} {A : Type ℓ} {B : Type ℓ'}
+             {P : ∥ A ∥ → ∥ B ∥ → Type ℓ''}
+         → ((x : _) → (y : _) → isProp (P x y))
+         → ((x : A) → (y : B) → P (inc x) (inc y))
+         → (x : ∥ A ∥) → (y : ∥ B ∥) → P x y
+∥-∥-elim₂ pprop incc (inc x) (inc x₁) = incc x x₁
+∥-∥-elim₂ pprop incc (inc x) (squash y y₁ i) =
+  isProp→PathP (λ j → pprop (inc x) (squash y y₁ j))
+  (∥-∥-elim₂ pprop incc (inc x) y)
+  (∥-∥-elim₂ pprop incc (inc x) y₁) i
+∥-∥-elim₂ pprop incc (squash x x₁ i) (inc y) =
+  isProp→PathP (λ j → pprop (squash x x₁ j) (inc y))
+  (∥-∥-elim₂ pprop incc x (inc y))
+  (∥-∥-elim₂ pprop incc x₁ (inc y)) i
+∥-∥-elim₂ pprop incc (squash x x₁ i) (squash y y₁ i₁) =
+  isProp→SquareP (λ j j₁ → pprop (squash x x₁ j) (squash y y₁ j₁))
+    {a = ∥-∥-elim₂ pprop incc x y}
+    {b = ∥-∥-elim₂ pprop incc x y₁}
+    {c = ∥-∥-elim₂ pprop incc x₁ y}
+    {d = ∥-∥-elim₂ pprop incc x₁ y₁}
+    (λ j → ∥-∥-elim₂ pprop incc (squash x x₁ j) y)
+    (λ j → ∥-∥-elim₂ pprop incc (squash x x₁ j) y₁)
+    (λ j → ∥-∥-elim₂ pprop incc x (squash y y₁ j))
+    (λ j → ∥-∥-elim₂ pprop incc x₁ (squash y y₁ j))
+    i i₁
 ```
 
 The propositional truncation can be called the **free proposition** on a
