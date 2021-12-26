@@ -184,7 +184,7 @@ There is also a convenient packaging of the previous two definitions
 into an equivalence:
 
 ```agda
-Σ≡Prop≃ : {B : A → Type ℓ}
+Σ≡Prop≃ : {B : A → Type ℓ₁}
         → (∀ x → isProp (B x))
         → {x y : Σ B}
         → (x .fst ≡ y .fst) ≃ (x ≡ y)
