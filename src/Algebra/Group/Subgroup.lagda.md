@@ -210,8 +210,8 @@ image if _there exists_ an $x : A$ such that $f(x)=y$.
 
 ## Subgroup product
 
-Given two subsets of $G$ we call $H_1$ and $H_2$, we can define
-their product $H_1 H_2$ elementwise:
+Given two subsets of $G$ we call $H_1$ and $H_2$, we can define their
+product $H_1 H_2$ elementwise:
 
 ```agda
 product : (H₁ H₂ : ℙ (G .fst)) → ℙ (G .fst)
@@ -219,44 +219,54 @@ product {G = G} H₁ H₂ a = ∃[ x ∈ G .fst ] (Σ[ y ∈ G .fst ] ((x ∈ H�
   where open GroupOn (G .snd)
 ```
 
-From now on, let us assume that both $H_1$
-Note that this does not necessarily form a subgroup of $G$ itself, even
-when both $H_1$ and $H_2$ do, which will be assumed from here on.
-<!-- INSERT EXAMPLE -->
-In the case that the two subgroups commute, the product *does* form
-a subgroup of $G$, as can be seen by straightforward, yet tedious
-calculations:
+From now on, let $H_1$ and $H_2$ be subgroups of $G$. Assuming $x \in H_1$
+and $y \in H_2$, $xy$ is an element of $H_1 H_2$ by definition:
 
 ```agda
-product-subgroup : {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isSubgroup G H₂) →
-  ((x y : _) → x ∈ H₁ → y ∈ H₂ → (G .snd .GroupOn._⋆_) x y ≡ (G .snd .GroupOn._⋆_) y x) →
-  isSubgroup G (product {G = G} H₁ H₂)
-product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
-  .isSubgroup.has-unit =
-    inc (unit , (unit , ((sub₁ .isSubgroup.has-unit , sub₂ .isSubgroup.has-unit) , idˡ)))
-  where open GroupOn (G .snd)
-product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
-  .isSubgroup.has-⋆ {x = x} {y = y} = ∥-∥-map₂ proof
-  where open GroupOn (G .snd)
-        proof : _
-        proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) (y₁ , y₂ , (y₁∈ , y₂∈) , yprod) =
-          (x₁ ⋆ y₁) , (x₂ ⋆ y₂) , ((sub₁ .isSubgroup.has-⋆ x₁∈ y₁∈) , (sub₂ .isSubgroup.has-⋆ x₂∈ y₂∈)) ,
-          ((x₁ ⋆ y₁) ⋆ (x₂ ⋆ y₂) ≡⟨ associative ⟩
-          (((x₁ ⋆ y₁) ⋆ x₂) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) (sym associative) ⟩
-          ((x₁ ⋆ (y₁ ⋆ x₂)) ⋆ y₂) ≡⟨ ap (λ a → (x₁ ⋆ a) ⋆ y₂) (prod-commutes y₁ x₂ y₁∈ x₂∈) ⟩
-          ((x₁ ⋆ (x₂ ⋆ y₁)) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) associative ⟩
-          (((x₁ ⋆ x₂) ⋆ y₁) ⋆ y₂) ≡⟨ ap (λ a → (a ⋆ y₁) ⋆ y₂) xprod ⟩
-          ((x ⋆ y₁) ⋆ y₂) ≡⟨ sym associative ⟩
-          (x ⋆ (y₁ ⋆ y₂)) ≡⟨ ap (x ⋆_) yprod ⟩
-           x ⋆ y ∎) 
-product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
-  .isSubgroup.has-inv {x = x} = ∥-∥-map proof
-  where open GroupOn (G .snd)
-        proof : _
-        proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) = x₁ ⁻¹ , (x₂ ⁻¹) ,
-          (sub₁ .isSubgroup.has-inv x₁∈ , sub₂ .isSubgroup.has-inv x₂∈) ,
-          (x₁ ⁻¹ ⋆ x₂ ⁻¹ ≡⟨ sym inv-comm ⟩
-          (x₂ ⋆ x₁)⁻¹ ≡⟨ ap inverse (sym (prod-commutes x₁ x₂ x₁∈ x₂∈)) ⟩
-          (x₁ ⋆ x₂)⁻¹ ≡⟨ ap inverse xprod ⟩
+module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isSubgroup G H₂) where
+  ∈-product : {H₁ H₂ : ℙ (G .fst)} → (x y : G .fst) → x ∈ H₁ → y ∈ H₂ →
+    (G .snd .GroupOn._⋆_) x y ∈ (product {G = G} H₁ H₂)
+  ∈-product x y x∈ y∈ = inc (x , (y , (x∈ , y∈) , refl))
+        
+```
+
+Note that the product does not necessarily form a subgroup of $G$ itself, even
+when both $H_1$ and $H_2$ do, which will be assumed from here on.
+<!-- INSERT EXAMPLE -->
+In the case that all elements in the two subgroups commute, the product
+*does* form a subgroup of $G$, as can be seen by straightforward, yet
+tedious calculations:
+
+```agda
+  product-subgroup :  ((x y : _) → x ∈ H₁ → y ∈ H₂ → (G .snd .GroupOn._⋆_) x y ≡ (G .snd .GroupOn._⋆_) y x) →
+    isSubgroup G (product {G = G} H₁ H₂)
+  product-subgroup prod-commutes
+    .isSubgroup.has-unit =
+      inc (unit , (unit , ((sub₁ .isSubgroup.has-unit , sub₂ .isSubgroup.has-unit) , idˡ)))
+    where open GroupOn (G .snd)
+  product-subgroup prod-commutes
+    .isSubgroup.has-⋆ {x = x} {y = y} = ∥-∥-map₂ proof
+    where open GroupOn (G .snd)
+          proof : _
+          proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) (y₁ , y₂ , (y₁∈ , y₂∈) , yprod) =
+            (x₁ ⋆ y₁) , (x₂ ⋆ y₂) , ((sub₁ .isSubgroup.has-⋆ x₁∈ y₁∈) , (sub₂ .isSubgroup.has-⋆ x₂∈ y₂∈)) ,
+            ((x₁ ⋆ y₁) ⋆ (x₂ ⋆ y₂) ≡⟨ associative ⟩
+            (((x₁ ⋆ y₁) ⋆ x₂) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) (sym associative) ⟩
+            ((x₁ ⋆ (y₁ ⋆ x₂)) ⋆ y₂) ≡⟨ ap (λ a → (x₁ ⋆ a) ⋆ y₂) (prod-commutes y₁ x₂ y₁∈ x₂∈) ⟩
+            ((x₁ ⋆ (x₂ ⋆ y₁)) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) associative ⟩
+            (((x₁ ⋆ x₂) ⋆ y₁) ⋆ y₂) ≡⟨ ap (λ a → (a ⋆ y₁) ⋆ y₂) xprod ⟩
+            ((x ⋆ y₁) ⋆ y₂) ≡⟨ sym associative ⟩
+            (x ⋆ (y₁ ⋆ y₂)) ≡⟨ ap (x ⋆_) yprod ⟩
+            x ⋆ y ∎) 
+  product-subgroup prod-commutes
+    .isSubgroup.has-inv {x = x} = ∥-∥-map proof
+    where open GroupOn (G .snd)
+          proof : _
+          proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) = x₁ ⁻¹ , (x₂ ⁻¹) ,
+            (sub₁ .isSubgroup.has-inv x₁∈ , sub₂ .isSubgroup.has-inv x₂∈) ,
+            (x₁ ⁻¹ ⋆ x₂ ⁻¹ ≡⟨ sym inv-comm ⟩
+            (x₂ ⋆ x₁)⁻¹ ≡⟨ ap inverse (sym (prod-commutes x₁ x₂ x₁∈ x₂∈)) ⟩
+            (x₁ ⋆ x₂)⁻¹ ≡⟨ ap inverse xprod ⟩
             x ⁻¹ ∎)
 ```
+
