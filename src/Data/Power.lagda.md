@@ -76,6 +76,12 @@ minimal _ = Lift _ ⊥ , λ x → absurd (Lift.lower x)
 
 _∩_ : ℙ X → ℙ X → ℙ X
 (A ∩ B) x = (A x .fst × B x .fst) , isHLevel× 1 (A x .snd) (B x .snd)
+
+∈-∩-fst : {a : X} (A B : ℙ X) → a ∈ (A ∩ B) → a ∈ A
+∈-∩-fst A B (fst₁ , snd₁) = fst₁
+
+∈-∩-snd : {a : X} (A B : ℙ X) → a ∈ (A ∩ B) → a ∈ B
+∈-∩-snd A B (fst₁ , snd₁) = snd₁
 ```
 
 Note that in the definition of `union`{.Agda ident=_∪_}, we must

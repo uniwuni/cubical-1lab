@@ -52,6 +52,21 @@ isSubgroup→GroupOn {G = G} H sg =
         open isSubgroup sg
 ```
 
+Subgroups are closed under intersections:
+
+```agda
+isSubgroup-∩ : {H₁ H₂ : ℙ (G .fst)} → isSubgroup G H₁ → isSubgroup G H₂ →
+  isSubgroup G (H₁ ∩ H₂)
+isSubgroup-∩ {H₁ = H₁} {H₂ = H₂} sg₁ sg₂ .isSubgroup.has-unit =
+  sg₁ .isSubgroup.has-unit , sg₂ .isSubgroup.has-unit
+isSubgroup-∩ {H₁ = H₁} {H₂ = H₂} sg₁ sg₂ .isSubgroup.has-⋆ x∈ y∈ =
+  sg₁ .isSubgroup.has-⋆ (∈-∩-fst H₁ H₂ x∈) (∈-∩-fst H₁ H₂ y∈) ,
+  sg₂ .isSubgroup.has-⋆ (∈-∩-snd H₁ H₂ x∈) (∈-∩-snd H₁ H₂ y∈)
+isSubgroup-∩ {H₁ = H₁} {H₂ = H₂} sg₁ sg₂ .isSubgroup.has-inv x∈ =
+  sg₁ .isSubgroup.has-inv (∈-∩-fst H₁ H₂ x∈) ,
+  sg₂ .isSubgroup.has-inv (∈-∩-snd H₁ H₂ x∈)
+```
+
 ## Normal Subgroups
 
 We say that a subset $N$ is a **normal subgroup** of $G$ if it is, in
@@ -191,4 +206,57 @@ image if _there exists_ an $x : A$ such that $f(x)=y$.
 
   im : Group ℓ
   im = _ , isSubgroup→GroupOn _ image-subgroup
+```
+
+## Subgroup product
+
+Given two subsets of $G$ we call $H_1$ and $H_2$, we can define
+their product $H_1 H_2$ elementwise:
+
+```agda
+product : (H₁ H₂ : ℙ (G .fst)) → ℙ (G .fst)
+product {G = G} H₁ H₂ a = ∃[ x ∈ G .fst ] (Σ[ y ∈ G .fst ] ((x ∈ H₁ × y ∈ H₂) × (x ⋆ y ≡ a))) , squash
+  where open GroupOn (G .snd)
+```
+
+From now on, let us assume that both $H_1$
+Note that this does not necessarily form a subgroup of $G$ itself, even
+when both $H_1$ and $H_2$ do, which will be assumed from here on.
+<!-- INSERT EXAMPLE -->
+In the case that the two subgroups commute, the product *does* form
+a subgroup of $G$, as can be seen by straightforward, yet tedious
+calculations:
+
+```agda
+product-subgroup : {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isSubgroup G H₂) →
+  ((x y : _) → x ∈ H₁ → y ∈ H₂ → (G .snd .GroupOn._⋆_) x y ≡ (G .snd .GroupOn._⋆_) y x) →
+  isSubgroup G (product {G = G} H₁ H₂)
+product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
+  .isSubgroup.has-unit =
+    inc (unit , (unit , ((sub₁ .isSubgroup.has-unit , sub₂ .isSubgroup.has-unit) , idˡ)))
+  where open GroupOn (G .snd)
+product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
+  .isSubgroup.has-⋆ {x = x} {y = y} = ∥-∥-map₂ proof
+  where open GroupOn (G .snd)
+        proof : _
+        proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) (y₁ , y₂ , (y₁∈ , y₂∈) , yprod) =
+          (x₁ ⋆ y₁) , (x₂ ⋆ y₂) , ((sub₁ .isSubgroup.has-⋆ x₁∈ y₁∈) , (sub₂ .isSubgroup.has-⋆ x₂∈ y₂∈)) ,
+          ((x₁ ⋆ y₁) ⋆ (x₂ ⋆ y₂) ≡⟨ associative ⟩
+          (((x₁ ⋆ y₁) ⋆ x₂) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) (sym associative) ⟩
+          ((x₁ ⋆ (y₁ ⋆ x₂)) ⋆ y₂) ≡⟨ ap (λ a → (x₁ ⋆ a) ⋆ y₂) (prod-commutes y₁ x₂ y₁∈ x₂∈) ⟩
+          ((x₁ ⋆ (x₂ ⋆ y₁)) ⋆ y₂) ≡⟨ ap (λ a → a ⋆ y₂) associative ⟩
+          (((x₁ ⋆ x₂) ⋆ y₁) ⋆ y₂) ≡⟨ ap (λ a → (a ⋆ y₁) ⋆ y₂) xprod ⟩
+          ((x ⋆ y₁) ⋆ y₂) ≡⟨ sym associative ⟩
+          (x ⋆ (y₁ ⋆ y₂)) ≡⟨ ap (x ⋆_) yprod ⟩
+           x ⋆ y ∎) 
+product-subgroup {G = G} {H₁ = H₁} {H₂ = H₂} sub₁ sub₂ prod-commutes
+  .isSubgroup.has-inv {x = x} = ∥-∥-map proof
+  where open GroupOn (G .snd)
+        proof : _
+        proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) = x₁ ⁻¹ , (x₂ ⁻¹) ,
+          (sub₁ .isSubgroup.has-inv x₁∈ , sub₂ .isSubgroup.has-inv x₂∈) ,
+          (x₁ ⁻¹ ⋆ x₂ ⁻¹ ≡⟨ sym inv-comm ⟩
+          (x₂ ⋆ x₁)⁻¹ ≡⟨ ap inverse (sym (prod-commutes x₁ x₂ x₁∈ x₂∈)) ⟩
+          (x₁ ⋆ x₂)⁻¹ ≡⟨ ap inverse xprod ⟩
+            x ⁻¹ ∎)
 ```
