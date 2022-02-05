@@ -8,8 +8,11 @@ A formalised, cross-linked reference resource for mathematics done in
 Homotopy Type Theory. Unlike the [HoTT book], the 1lab is not a "linear"
 resource: Concepts are presented as a directed graph, with links
 indicating _dependencies_. For instance, the statement of the univalence
-axiom depends on [_universes_](agda://1Lab.Type), [_propositional
-equality_](agda://1Lab.Path) (paths) and [_equivalences_](agda://1Lab.Equiv):
+principle depends on [_universes_](agda://1Lab.Type),
+[_identifications_](agda://1Lab.Path) and
+[_equivalences_](agda://1Lab.Equiv).  In addition to the hyperlinked
+"web of concepts" provided by the Agda code, there is a short
+introduction to homotopy type theory: **[Start here](1Lab.intro.html)**.
 
 [HoTT book]: https://homotopytypetheory.org/book/
 
@@ -30,10 +33,10 @@ _ = univalence
 
 If you don't know what those concepts refer to, it could be challenging
 to figure out what the definition above is even saying - or how it's
-proven. Fortunately, every single element there is a link! Try clicking
-on the word `isEquiv`{.Agda} - either here in the text, or there in the
-code. It'll take you to the definition, which will be highlighted in
-orange to draw your attention.
+proven. Fortunately, every single text element there is a link! Try
+clicking on the word `isEquiv`{.Agda} - either here in the text, or
+there in the code. It'll take you to the definition, which will be
+highlighted in orange to draw your attention.
 
 Links are colour-coded to indicate what they point to. In body text,
 links rendered in [blue (or purple) sans-serif font](index.html) link to
@@ -63,10 +66,10 @@ _ = sym
 
 The 1lab is an [open-source] project with the goal of making formalised
 mathematics, and especially formalised mathematics done in Homotopy Type
-Theory, accessible to as wide as audience as possible. However, the
-pages here still do assume a baseline level of knowledge: Nothing
-specific to HoTT, but familiarity with MLTT, especially with Agda, is
-helpful.
+Theory, accessible to as wide as audience as possible. In addition to
+the hyperlinked "web of concepts" provided by the Agda code, there is a
+short introduction to homotopy type theory: **[Start
+here](1Lab.intro.html)**.
 
 [open-source]: https://github.com/plt-amy/cubical-1lab
 
@@ -197,12 +200,9 @@ And, of course, the formalisation would not be possible without
 # Type Theory
 
 <div class=warning>
-Specifically for the type theory namespace, there is a **[recommended
-reading order]** for modules, which should be useful as a first
-introduction to Cubical Type Theory.
+Most of the modules in the 1Lab assume a baseline knowledge of type
+theory. For this, [**read the introduction here**](1Lab.intro.html).
 </div>
-
-[recommended reading order]: agda://1Lab.index
 
 The first things to be explained are the foundational constructions in
 (cubical) type theory - things like types themselves, [universes],
@@ -235,7 +235,7 @@ open import 1Lab.HLevel.Sets     -- K, Rijke's theorem, Hedberg's theorem
 open import 1Lab.HLevel.Retracts -- Closure of h-levels under retractions/isos
 open import 1Lab.HLevel.Universe -- The type of n-types is a (n+1)-type
 
-open import 1Lab.Univalence            -- Equivalence is equivalent to equality
+open import 1Lab.Univalence            -- Equivalence is equivalent to identification
 open import 1Lab.Univalence.SIP        -- Univalence + preservation of structure
 open import 1Lab.Univalence.SIP.Auto   -- Derive isUnivalent for families of types
 open import 1Lab.Univalence.SIP.Record -- Derive isUnivalent for record types
@@ -246,6 +246,7 @@ open import 1Lab.Type.Sigma -- Properties of dependent coproducts
 
 open import 1Lab.HIT.S1         -- The circle as a cell complex
 open import 1Lab.HIT.Sphere     -- Spheres of arbitrary dimension
+open import 1Lab.HIT.Torus      -- Torus as a cell complex and as a product space
 open import 1Lab.HIT.Sinfty     -- The infinity-dimensional sphere
 open import 1Lab.HIT.Suspension -- The suspension operation
 open import 1Lab.HIT.Truncation -- Propositional truncation
@@ -268,6 +269,9 @@ open import Data.Int  -- The integers
 open import Data.Sum  -- Coproduct types
 open import Data.Bool -- The booleans
 open import Data.List -- Finite lists
+open import Data.Power           -- Power sets
+open import Data.Power.Lattice   -- Power sets form a lattice
+open import Data.Set.Coequaliser -- Set coequalisers
 ```
 
 <!--
@@ -287,15 +291,23 @@ open import Relation.Order.Lexicographic -- Lexicographic orderings
 In the `Algebra` namespace, the theory of universal algebra is developed
 from a univalent perspective. Specifically, every definition of an
 algebraic structure comes with an associated proof that it is univalent
---- concretely, equality of groups is group isomorphism (for instance).
+--- concretely, identification of groups is group isomorphism (for
+instance).
 
 ```agda
 open import Algebra.Magma                      -- Binary operations 
 open import Algebra.Magma.Unital               -- Operations with two-sided units
 open import Algebra.Magma.Unital.EckmannHilton -- The Eckmann-Hilton argument
 
-open import Algebra.Semigroup                  -- Semigroups (associative magmas)
-open import Algebra.Monoid                     -- Monoids as unital semigroups
-open import Algebra.Group                      -- Groups as monoids with inverses
-open import Algebra.Group.Cayley               -- Cayley's theorem
+open import Algebra.Semigroup   -- Semigroups (associative magmas)
+open import Algebra.Monoid      -- Monoids as unital semigroups
+
+open import Algebra.Group                   -- Groups as monoids with inverses
+open import Algebra.Group.Free              -- Free groups
+open import Algebra.Group.Cayley            -- Cayley's theorem
+open import Algebra.Group.Homotopy          -- Homotopy groups
+open import Algebra.Group.Subgroup          -- Subgroups; Images and kernels
+open import Algebra.Group.Quotients         -- Quotients by normal subgroups
+open import Algebra.Group.Ab.Free           -- Abelianisations
+open import Algebra.Group.Quotients.IsoThms -- Isomorphism theorems
 ```

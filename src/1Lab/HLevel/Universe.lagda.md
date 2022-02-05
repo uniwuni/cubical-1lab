@@ -56,8 +56,8 @@ the canonical function sending $x$ to the `centre of contraction`{.Agda
 ident=centre} of $B$, which is an equivalence because it is a
 `map between contractible types`{.Agda ident=isContr→isEquiv}.
 
-By `the characterisation of equality in Σ`{.Agda ident=Σ-Path} and the
-fact that `being an equivalence is a proposition`{.Agda
+By `the characterisation of paths in Σ`{.Agda ident=Σ-Path} and the fact
+that `being an equivalence is a proposition`{.Agda
 ident=isProp-isEquiv}, we get the required family of paths deforming any
 $A \simeq B$ to our `f`.
 
@@ -85,7 +85,7 @@ so is the former:
 
 ```agda
 isHLevel-≡ : (n : Nat) → isHLevel A n → isHLevel B n → isHLevel (A ≡ B) n
-isHLevel-≡ n Ahl Bhl = isHLevel-equiv n ua univalence¯¹ (isHLevel-≃ n Ahl Bhl)
+isHLevel-≡ n Ahl Bhl = isHLevel-equiv n ua univalence⁻¹ (isHLevel-≃ n Ahl Bhl)
 ```
 
 ## Universes
@@ -138,7 +138,7 @@ nType-ua f = Σ≡Prop (λ _ → isProp-isHLevel _) (ua f)
 
 nType-univalence : {n : Nat} {X Y : nType ℓ n} → (X ≡ Y) ≃ (X .fst ≃ Y .fst)
 nType-univalence {X = X} {Y} =
-  (X ≡ Y)           ≃⟨ Σ≡Prop≃ (λ _ → isProp-isHLevel _) e¯¹ ⟩
+  (X ≡ Y)           ≃⟨ Σ≡Prop≃ (λ _ → isProp-isHLevel _) e⁻¹ ⟩
   (X .fst ≡ Y .fst) ≃⟨ pathToEquiv , univalence ⟩
   (X .fst ≃ Y .fst) ≃∎
 ```
@@ -151,7 +151,7 @@ theorem: `nType`{.Agda} is a $(n+1)$-type.
 isHLevel-nType : (n : Nat) → isHLevel (nType ℓ n) (suc n)
 isHLevel-nType zero = isProp-hContr
 isHLevel-nType (suc n) (A , a) (B , b) =
-  isHLevel≃ (suc n) (nType-univalence e¯¹) (isHLevel-≃ (suc n) a b)
+  isHLevel≃ (suc n) (nType-univalence e⁻¹) (isHLevel-≃ (suc n) a b)
 ```
 
 Recall that we defined `Set`{.Agda} to be `nType ℓ 2`, just not with

@@ -7,3 +7,6 @@ config.mk
 src/wip/
 .DS_Store
 *~
+*.agdai
+/result
+.shake

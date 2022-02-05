@@ -13,6 +13,9 @@ private variable
   ℓ ℓ₁ : Level
   A A' : Type ℓ
   B P Q : A → Type ℓ
+
+open import Agda.Builtin.Sigma renaming (Σ to ∑) public
+-- ^ for Agda display
 ```
 -->
 
@@ -104,7 +107,7 @@ they are included for completeness. </summary>
     ctrB = subst B (sym α) b
 
     ctrP : PB α ctrB b
-    ctrP i = transport-filler (λ i → B (sym α i)) b (~ i)
+    ctrP i = coe1→i (λ i → B (α i)) i b
 
     ctr : fibre intro x
     ctr = (ctrA , ctrB) , Σ-PathP α ctrP
@@ -125,6 +128,19 @@ they are included for completeness. </summary>
         { (i = i0) → ctrP (~ k)
         ; (i = i1) → σ (~ k)
         })) (inS b) (~ j)
+
+Σ-assoc : ∀ {ℓ ℓ' ℓ''} {A : Type ℓ} {B : A → Type ℓ'} {C : (x : A) → B x → Type ℓ''}
+        → (Σ[ x ∈ A ] Σ[ y ∈ B x ] C x y) ≃ (Σ[ x ∈ Σ B ] (C (x .fst) (x .snd)))
+Σ-assoc .fst (x , y , z) = (x , y) , z
+Σ-assoc .snd .isEqv y .centre = strict-fibres (λ { ((x , y) , z) → x , y , z}) y .fst
+Σ-assoc .snd .isEqv y .paths = strict-fibres (λ { ((x , y) , z) → x , y , z}) y .snd
+
+Σ-Π-distrib : ∀ {ℓ ℓ' ℓ''} {A : Type ℓ} {B : A → Type ℓ'} {C : (x : A) → B x → Type ℓ''}
+            → ((x : A) → Σ[ y ∈ B x ] C x y)
+            ≃ (Σ[ f ∈ ((x : A) → B x) ] ((x : A) → C x (f x)))
+Σ-Π-distrib .fst f = (λ x → f x .fst) , λ x → f x .snd
+Σ-Π-distrib .snd .isEqv y .centre = strict-fibres (λ f x → f .fst x , f .snd x) y .fst
+Σ-Π-distrib .snd .isEqv y .paths = strict-fibres (λ f x → f .fst x , f .snd x) y .snd
 ```
 </details>
 
@@ -132,8 +148,9 @@ they are included for completeness. </summary>
 ## Paths in subtypes
 
 When `P` is a family of propositions, it is sound to regard `Σ[ x ∈ A ]
-(P x)` as a _subtype_ of `A`. This is because equality in the subtype is
-characterised uniquely by equality of the first projections:
+(P x)` as a _subtype_ of `A`. This is because identification in the
+subtype is characterised uniquely by identification of the first
+projections:
 
 ```agda
 Σ≡Prop : {B : A → Type ℓ}
@@ -189,6 +206,17 @@ into an equivalence:
         → {x y : Σ B}
         → (x .fst ≡ y .fst) ≃ (x ≡ y)
 Σ≡Prop≃ bp = Σ≡Prop bp , isEquiv-Σ≡Prop bp
+
+Σ≡Prop-Sq : ∀ {ℓ ℓ'} {A : Type ℓ} {B : A → Type ℓ'} 
+          → {w x y z : Σ B} 
+          → (∀ x → isProp (B x))
+          → {p : x ≡ w} {q : x ≡ y} {s : w ≡ z} {r : y ≡ z}
+          → Square (ap fst p) (ap fst q) (ap fst s) (ap fst r)
+          → Square p q s r
+Σ≡Prop-Sq Bprop sq i j .fst = sq i j
+Σ≡Prop-Sq Bprop {p} {q} {s} {r} sq i j .snd = 
+  isProp→SquareP (λ i j → Bprop (sq i j)) 
+    (ap snd p) (ap snd q) (ap snd s) (ap snd r) i j
 ```
 
 ## Dependent sums of contractibles

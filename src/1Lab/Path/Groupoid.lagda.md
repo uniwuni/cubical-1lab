@@ -159,18 +159,13 @@ square expresses the equation we're looking for. Thankfully, we only
 have to do this once!
 
 ```agda
-  private
-    inv-r-filler : ∀ {x y : A} (p : x ≡ y) → (i j k : I) → A
-    inv-r-filler {x = x} p k j i =
-      hfill (λ l → λ { (i = i0) → x
-                     ; (i = i1) → p (~ l ∧ ~ j)
-                     ; (j = i1) → x
-                     })
-            (inS (p (i ∧ ~ j))) 
-            k
-  
-  ∙-inv-r : (p : x ≡ y) → p ∙ sym p ≡ refl
-  ∙-inv-r p i j = inv-r-filler p i1 i j
+  ∙-inv-r : ∀ {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
+  ∙-inv-r {x = x} p i j =
+    hcomp (λ l → λ { (j = i0) → x
+                   ; (j = i1) → p (~ l ∧ ~ i)
+                   ; (i = i1) → x
+                   })
+          (p (j ∧ ~ i)) 
 ```
 
 For the other direction, we use the fact that `p` is definitionally
@@ -189,8 +184,11 @@ established that functions behave like functors: These are the lemmas
 [1Lab.Path]: 1Lab.Path.html#the-action-on-paths
 
 There, a proof that functions preserve path composition wasn't included,
-because it's best written using equational reasoning and the groupoid
-identities:
+because it needs `hcomp`{.Agda} to be defined. We fill a cube where the
+left face is defined to be `ap f (p ∙ q)` (that's the `(i = i0)` face in
+the `hcomp`{.Agda} below), and the remaining structure of the proof
+mimics the definition of `_∙_`{.Agda}, so that we indeed get `ap f p ∙
+ap f q` as the right face.
 
 <!--
 ```
@@ -200,14 +198,14 @@ identities:
 -->
 
 ```agda
-  ap-comp-path : {f : A → B} {x y z : A} (p : x ≡ y) (q : y ≡ z)
+  ap-comp-path : (f : A → B) {x y z : A} (p : x ≡ y) (q : y ≡ z)
                → ap f (p ∙ q) ≡ ap f p ∙ ap f q
-  ap-comp-path {f = f} =
-    J (λ y p → (q : y ≡ _) → ap f (p ∙ q) ≡ ap f p ∙ ap f q)
-      λ q → ap f (refl ∙ q)    ≡⟨ ap (ap f) (∙-id-l q) ⟩
-            ap f q             ≡⟨ sym (∙-id-l (ap f q)) ⟩
-            refl ∙ ap f q      ≡⟨⟩
-            ap f refl ∙ ap f q ∎
+  ap-comp-path f {x} p q i j =
+    hcomp (λ k → λ { (i = i0) → f (∙-filler p q k j)
+                   ; (j = i0) → f x
+                   ; (j = i1) → f (q k)
+                   })
+          (f (p j))
 ```
 
 ### Convenient helpers
@@ -225,6 +223,16 @@ more than a handful of intermediate steps:
     (sym p ∙ p) ∙ q ≡⟨ ap₂ _∙_ (∙-inv-l p) refl ⟩
     refl ∙ q        ≡⟨ ∙-id-l q ⟩
     q               ∎
+  
+  ∙-cancel'-l : {x y z : A} (p : x ≡ y) (q r : y ≡ z)
+              → p ∙ q ≡ p ∙ r → q ≡ r
+  ∙-cancel'-l = J (λ y p → (q r : y ≡ _) → p ∙ q ≡ p ∙ r → q ≡ r)
+                  (λ q r proof → sym (∙-id-l q) ·· proof ·· ∙-id-l r)
+
+  ∙-cancel'-r : {x y z : A} (p : y ≡ z) (q r : x ≡ y)
+              → q ∙ p ≡ r ∙ p → q ≡ r
+  ∙-cancel'-r = J (λ y p → (q r : _ ≡ _) → q ∙ p ≡ r ∙ p → q ≡ r)
+                  (λ q r proof → sym (∙-id-r q) ·· proof ·· ∙-id-r r)
 ```
 
 # Groupoid structure of types (cont.)

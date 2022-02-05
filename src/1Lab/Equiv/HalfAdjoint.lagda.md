@@ -96,7 +96,7 @@ fundamental, the proof we actually use is written with efficiency of
 computation in mind - hence, cubically. The proof here is intended to be
 more educational.
 
-First, we give an equivalent characterisation of equality in
+First, we give an equivalent characterisation of paths in
 `fibre`{.Agda}s, which will be used in proving that `half adjoint
 equivalences are equivalences`{.Agda ident=isHAE→isEquiv}.
 
@@ -113,7 +113,7 @@ here (rather than being completely invisible) for
 completeness:</summary>
 ```
 fibre-paths {f = f} {y} {f1} {f2} =
-  Path (fibre f y) f1 f2                                                       ≃⟨ Iso→Equiv Σ-Path-iso e¯¹ ⟩
+  Path (fibre f y) f1 f2                                                       ≃⟨ Iso→Equiv Σ-Path-iso e⁻¹ ⟩
   (Σ[ γ ∈ f1 .fst ≡ f2 .fst ] (subst (λ x₁ → f x₁ ≡ _) γ (f1 .snd) ≡ f2 .snd)) ≃⟨ Σ-ap-snd (λ x → pathToEquiv (lemma x)) ⟩
   (Σ[ γ ∈ f1 .fst ≡ f2 .fst ] (ap f γ ∙ f2 .snd ≡ f1 .snd))                    ≃∎
   where
@@ -138,7 +138,7 @@ fibre-paths {f = f} {y} {f1} {f2} =
 </details>
 
 Then, given an element $y : B$, we can construct a fibre of of $f$, and,
-using the above characterisation of equality, prove that this fibre is a
+using the above characterisation of paths, prove that this fibre is a
 centre of contraction:
 
 ```agda
@@ -149,17 +149,17 @@ isHAE→isEquiv {A = A} {B} {f} (g , η , ε , zig) .isEqv y = contr fib contrac
   fib = g y , ε y
 ```
 
-The fibre is given by $(g(y), ε(y))$, which we can prove equal to another
-$(x, p)$ using a very boring calculation:
+The fibre is given by $(g(y), ε(y))$, which we can prove identical to
+another $(x, p)$ using a very boring calculation:
 
 ```agda
   contract : (fib₂ : fibre f y) → fib ≡ fib₂
-  contract (x , p) = (fibre-paths e¯¹) .fst (x≡gy , path) where
+  contract (x , p) = (fibre-paths e⁻¹) .fst (x≡gy , path) where
     x≡gy = ap g (sym p) ∙ η x
 
     path : ap f (ap g (sym p) ∙ η x) ∙ p ≡ ε y
     path =
-      ap f (ap g (sym p) ∙ η x) ∙ p               ≡⟨ ap₂ _∙_ (ap-comp-path (ap g (sym p)) (η x)) refl ∙ sym (∙-assoc _ _ _) ⟩
+      ap f (ap g (sym p) ∙ η x) ∙ p               ≡⟨ ap₂ _∙_ (ap-comp-path f (ap g (sym p)) (η x)) refl ∙ sym (∙-assoc _ _ _) ⟩
       ap (f ∘ g) (sym p) ∙ ap f (η x) ∙ p         ≡⟨ ap₂ _∙_ refl (ap₂ _∙_ (zig _) refl) ⟩ -- by the triangle identity
       ap (f ∘ g) (sym p) ∙ ε (f x)    ∙ p         ≡⟨ ap₂ _∙_ refl (homotopy-natural ε p)  ⟩ -- by naturality of ε
 ```
@@ -172,7 +172,7 @@ $\varepsilon$ lets us "push it past $p$" to get something we can cancel:
 
 ```agda
       ap (f ∘ g) (sym p) ∙ ap (f ∘ g) p ∙ ε y     ≡⟨ ∙-assoc _ _ _ ⟩
-      (ap (f ∘ g) (sym p) ∙ ap (f ∘ g) p) ∙ ε y   ≡⟨ ap₂ _∙_ (sym (ap-comp-path {f = f ∘ g} (sym p) p)) refl ⟩
+      (ap (f ∘ g) (sym p) ∙ ap (f ∘ g) p) ∙ ε y   ≡⟨ ap₂ _∙_ (sym (ap-comp-path (f ∘ g) (sym p) p)) refl ⟩
       ap (f ∘ g) (sym p ∙ p) ∙ ε y                ≡⟨ ap₂ _∙_ (ap (ap (f ∘ g)) (∙-inv-r _)) refl ⟩
       ap (f ∘ g) refl ∙ ε y                       ≡⟨⟩
       refl ∙ ε y                                  ≡⟨ ∙-id-l (ε y) ⟩
@@ -191,5 +191,34 @@ isIso→isEquiv' = isHAE→isEquiv ∘ isIso→isHAE
 <!--
 ```agda
 _ = isIso→isEquiv
+
+equiv→zig : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {B : Type ℓ₂} {f : A → B}
+          → (eqv : isEquiv f) (a : A)
+          → ap f (equiv→retraction eqv a) ≡ equiv→section eqv (f a)
+equiv→zig {f = f} eqv = commPathIsEq where
+  commSqIsEq : ∀ a → Square (sym (ap f (equiv→retraction eqv a)))
+                            refl
+                            (equiv→section eqv (f a))
+                            refl
+  commSqIsEq a i = eqv .isEqv (f a) .paths (a , refl) (~ i) .snd
+
+  commPathIsEq : ∀ a → ap f (equiv→retraction eqv a) ≡ equiv→section eqv (f a)
+  commPathIsEq a i j =
+    hcomp
+      (λ k → λ
+        { (i = i1) → equiv→section eqv (f a) j
+        ; (i = i0) → f (equiv→retraction eqv a (j ∨ ~ k))
+        ; (j = i0) → f (equiv→retraction eqv a (~ i ∧ ~ k))
+        ; (j = i1) → f a
+        })
+      (commSqIsEq a i j)
+
+isEquiv→isHAE : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {B : Type ℓ₂} {f : A → B}
+              → isEquiv f → isHAE f
+isEquiv→isHAE {f = f} eqv =
+    equiv→inverse eqv
+  , equiv→retraction eqv
+  , equiv→section eqv
+  , equiv→zig eqv
 ```
 -->

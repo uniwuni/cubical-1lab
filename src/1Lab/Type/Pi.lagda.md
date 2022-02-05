@@ -71,9 +71,10 @@ function≃ dom rng = Iso→Equiv the-iso where
 
 ## Dependent Funext
 
-When the domain and codomain are simple types, equality of functions is
-characterised by `funext`{.Agda}. We can generalise this to `funextDep`,
-in which the domain and codomain are allowed to be lines of types:
+When the domain and codomain are simple types (rather than a higher
+shape), paths in function spaces are characterised by `funext`{.Agda}.
+We can generalise this to `funextDep`, in which the domain and codomain
+are allowed to be lines of types:
 
 ```agda
 funextDep
@@ -91,7 +92,7 @@ funextDep {A = A} {B} {f} {g} h i x =
       { (i = i0) → f (coei→i A i0 x k)
       ; (i = i1) → g (coei→i A i1 x k)
       })
-    (h (λ j → coei→j A i j x) i)
+    (h (λ j → coe A i j x) i)
 ```
 
 A very ugly cubical argument shows that this function is an equivalence:
@@ -132,13 +133,13 @@ funextDep≃ {A = A} {B} {f} {g} = Iso→Equiv isom where
         })
       (h (λ j → lemi→j j m) i)
     where
-    lemi→j : ∀ j → coei→j A i j (p i) ≡ p j
+    lemi→j : ∀ j → coe A i j (p i) ≡ p j
     lemi→j j =
-      coei→j (λ k → coei→j A i k (p i) ≡ p k) i j (coei→i A i (p i))
+      coe (λ k → coe A i k (p i) ≡ p k) i j (coei→i A i (p i))
 
-    lemi→i : PathP (λ m → lemi→j i m ≡ p i) (coei→i A i (p i)) refl
+    lemi→i : Square (lemi→j i) (coei→i A i (p i)) refl refl
     lemi→i =
-      sym (coei→i (λ k → coei→j A i k (p i) ≡ p k) i (coei→i A i (p i)))
+      sym (coei→i (λ k → coe A i k (p i) ≡ p k) i (coei→i A i (p i)))
       ◁ λ m k → lemi→j i (m ∨ k)
 
 heteroHomotopy≃Homotopy
@@ -146,7 +147,7 @@ heteroHomotopy≃Homotopy
     {f : A i0 → B i0} {g : A i1 → B i1}
 
   → ({x₀ : A i0} {x₁ : A i1} → PathP A x₀ x₁ → PathP B (f x₀) (g x₁))
-  ≃ ((x₀ : A i0) → PathP B (f x₀) (g (transport (λ i → A i) x₀)))
+  ≃ ((x₀ : A i0) → PathP B (f x₀) (g (coe0→1 A x₀)))
 
 heteroHomotopy≃Homotopy {A = A} {B} {f} {g} = Iso→Equiv isom where
   open isIso

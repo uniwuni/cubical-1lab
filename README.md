@@ -1,28 +1,116 @@
-# [Cubical 1lab](https://cubical.1lab.dev)
+[![Discord](https://img.shields.io/discord/914172963157323776?label=Discord&logo=discord)](https://discord.gg/NvXkUVYcxV)
+[![Build 1Lab](https://github.com/plt-amy/cubical-1lab/actions/workflows/build.yml/badge.svg)](https://github.com/plt-amy/cubical-1lab/actions/workflows/build.yml)
 
-A section of the 1lab dedicated to mathematics done in Homotopy Type
-Theory. We have a Discord server for asking questions/discussing
-contributions/yelling at Amy for being bad at explaining things: [join
-here!](https://discord.gg/NvXkUVYcxV)
+# [1Lab](https://cubical.1lab.dev)
 
-## Building
+A formalised, cross-linked reference resource for mathematics done in
+Homotopy Type Theory. Unlike the HoTT book, the 1lab is not a “linear”
+resource: Concepts are presented as a directed graph, with links
+indicating dependencies.
 
-The recommended way of building the 1Lab is using Docker. The Dockerfile
-in the repository builds an Arch Linux installation with everything
-needed to build, and the build script precompiled as `1lab-shake`. The
-image is also on docker.io, so you can ruin it like this:
+# Building
 
+Here's how you can build --- and work on --- the web parts of the 1lab.
+
+## Using Docker
+
+An Arch Linux-based Docker container is provided which contains all the
+dependencies necessary for building the 1lab, including the font files
+required for a complete deployment. Since this container is on the
+registry, we can do a one-line build of the 1Lab as follows:
+
+```bash
+% docker run -it -v $PWD:/workspace docker.io/pltamy/1lab:latest /bin/sh -i
+$ 1lab-shake all -j       # build everything
+$ sh support/make-site.sh # copy everything into place
 ```
-% docker run -it -v $PWD:/workspace docker.io/pltamy/1lab:latest /bin/bash -i
-$ 1lab-shake all -j # (in the container)
+
+After this, the directory `_build/site` will have everything in place
+for use as the HTTP root of a static site to serve the 1Lab, for example
+using the Python distribution that the container ships with:
+
+```bash
+$ python -m http.server --directory _build/site
 ```
 
-A complete deployment also redistributes parts of the following free
-software projects:
+## Using Nix
 
-* KaTeX CSS & fonts: put `katex.min.css` under `_build/html/css/`, and
-the KaTeX font files under `_build/html/css/fonts`.
+If you run NixOS, or have the Nix package manager installed, you can use
+the provided `default.nix` file to build a complete, reproducible
+deployment of the 1Lab. This has the benefit of also providing
+`nix-shell` support for immediately setting up an environment for
+development which supports compilation of the HTML and SVG files, in
+addition to the Agda.
 
-* Iosevka (as iosevk-abbie): Either build it yourself or get mine
-[here](https://files.amelia.how/3OYp.xz), as a xz'd tar. Put the `woff2`
-and `ttf` directories of the tar under static/.
+You can then use Nix to compile the project as usual. As a quick point
+of reference, `nix build` will type-check and compile the entire thing,
+and copy the necessary assets (TeX Gyre Pagella and KaTeX css/fonts) to
+the right locations. The result will be linked as `./result`, which can
+then be used to serve a website:
+
+```bash
+$ nix build
+$ python -m http.server --directory result
+```
+
+For interactive development, keep in mind that the `buildInputs` to
+`default.nix` _don't_ include Stack or `ghc`. However, just like the
+Docker container, a pre-built version of the Shakefile is included as
+`1lab-shake`:
+
+```bash
+$ 1lab-shake all -j
+```
+
+Since `nix-shell` will load the derivation steps as environment
+variables, you can use something like this to copy the static assets
+into place:
+
+```bash
+$ export out=_build/site
+$ echo "${installPhase}" | bash
+```
+
+## Directly
+
+If you're feeling brave, you can try to replicate one of the build
+environments above. You will need:
+
+- A Haskell package manager (either cabal or stack);
+
+- A working LaTeX installation (TeXLive, etc) with the packages
+`tikz-cd` (depends on `pgf`), `mathpazo`, `xcolor`, `preview`, and
+`standalone` (depends on `varwidth` and `xkeyval`);
+
+- [Rubber] (for `rubber`);
+- [Poppler] (for `pdftocairo`);
+- [`libsass`] (for `sassc`);
+- The [KaTeX] executable `katex` in your `$PATH`;
+- The tools [agda-fold-equations] and [agda-reference-filter], which are
+Cabal packages and can be installed however you prefer
+
+- If you're using Stack, that's all. If using cabal-install, you're
+going to need the following Haskell packages:
+  + Agda
+  + pandoc
+  + shake
+  + tagsoup
+  + uri-encode
+
+[Rubber]: https://github.com/petrhosek/rubber
+[Poppler]: https://poppler.freedesktop.org/
+[KaTeX]: https://katex.org
+[agda-fold-equations]: https://git.amelia.how/amelia/agda-fold-equations.git
+[agda-reference-filter]: https://git.amelia.how/amelia/agda-reference-filter.git
+[`libsass`]: https://www.google.com/search?client=firefox-b-d&q=sassc
+
+If everything is set up properly, the following command should work to
+produce the compiled HTML, SVG and CSS files in `_build/html`. You can
+then follow either the `support/make-site.sh` script or the
+`installPhase` in `default.nix` to work out how to acquire & set up the
+rest of the static assets.
+
+```bash
+$ ./Shakefile.hs all -j        # (using stack)
+$ runghc ./Shakefile.hs all -j # (using cabal-install)
+```

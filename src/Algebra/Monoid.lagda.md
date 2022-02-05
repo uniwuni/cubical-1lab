@@ -115,7 +115,7 @@ Monoid-univalent {ℓ = ℓ} =
 ```
 
 From this, we automatically get a specialisation of the `SIP`{.Agda} for
-`Monoid`{.Agda}s, which says that _equality of monoids is monoid
+`Monoid`{.Agda}s, which says that _identification of monoids is monoid
 isomorphism_.
 
 ```agda
@@ -164,7 +164,7 @@ that element. To make this precise: Let $e$ be an element of a monoid,
 say $(M, 1, \star)$; If there are $x$ and $y$ such that $x \star e = e$
 and $e \star y = e$, then $x = y$.
 
-```
+```agda
 monoid-inverse-unique
   : ∀ {1M : A} {_⋆_ : A → A → A}
   → (m : isMonoid 1M _⋆_)
@@ -178,7 +178,7 @@ lines as the proof, which is a rather boring calculation. Since $1$ is
 an identity for $\star$, we can freely multiply by $1$ to "sneak in" a
 $y$:
 
-```
+```agda
 monoid-inverse-unique {1M = 1M} {_⋆_} m e x y li1 ri2 =
   x             ≡⟨ sym (m .idʳ) ⟩
   x ⋆ 1M        ≡⟨ ap₂ _⋆_ refl (sym ri2) ⟩ 

@@ -142,9 +142,31 @@ propositions being closed under dependent products, and `isContr`{.Agda}
 being a proposition.
 
 ```agda
-isProp-isEquiv : (f : A → B) → isProp (isEquiv f)
-isProp-isEquiv f x y i .isEqv p = isProp-isContr (x .isEqv p) (y .isEqv p) i
+module _ where private
+  isProp-isEquiv : (f : A → B) → isProp (isEquiv f)
+  isProp-isEquiv f x y i .isEqv p = isProp-isContr (x .isEqv p) (y .isEqv p) i
 ```
+
+<details>
+<summary>
+Even though the proof above works, we use the direct cubical proof in
+this `<details>` tag (lifted from the Cubical Agda library) in the rest
+of the development for efficiency concerns.
+</summary>
+
+```agda
+isProp-isEquiv : (f : A → B) → isProp (isEquiv f)
+isProp-isEquiv f p q i .isEqv y =
+  let p2 = p .isEqv y .paths
+      q2 = q .isEqv y .paths
+  in contr (p2 (q .isEqv y .centre) i)
+      λ w j → hcomp (λ k → λ { (i = i0) → p2 w j
+                             ; (i = i1) → q2 w (j ∨ ~ k)
+                             ; (j = i0) → p2 (q2 w (~ k)) i
+                             ; (j = i1) → w })
+                    (p2 w (i ∨ j))
+```
+</details>
 
 # Isomorphisms from equivalences
 
@@ -266,9 +288,9 @@ $\pi : x_0 ≡ x_1$ and $p_0 ≡ p_1$ _`over`{.Agda ident=PathP}_ $\pi$.
 
 As an intermediate step in proving that $p_0 ≡ p_1$, we _must_ show that
 $x_0 ≡ x_1$ - without this, we can't even _state_ that $p_0$ and $p_1$
-are equal, since they live in different types!  To this end, we will
-build $\pi : p_0 ≡ p_1$, parts of which will be required to assemble the
-overall proof that $p_0 ≡ p_1$.
+are identified, since they live in different types!  To this end, we
+will build $\pi : p_0 ≡ p_1$, parts of which will be required to
+assemble the overall proof that $p_0 ≡ p_1$.
 
 We'll detail the construction of $\pi_0$; for $\pi_1$, the same method
 is used. We want to construct a _line_, which we can do by exhibiting
@@ -301,7 +323,7 @@ a name: $\theta$.
                           })
                     (g (p0 (~ i)))
 
-    θ₀ : PathP (λ i → g (p0 (~ i)) ≡ π₀ i) refl (t x0)
+    θ₀ : Square (ap g (sym p0)) refl (t x0) π₀
     θ₀ i j = hfill (λ k → λ { (i = i0) → g y
                             ; (i = i1) → t x0 k
                             })
@@ -334,7 +356,7 @@ $\theta_1$.
                           })
                     (g (p1 (~ i)))
 
-    θ₁ : PathP (λ i → g (p1 (~ i)) ≡ π₁ i) refl (t x1)
+    θ₁ : Square (ap g (sym p1)) refl (t x1) π₁
     θ₁ i j = hfill (λ k → λ { (i = i0) → g y
                             ; (i = i1) → t x1 k
                             })
@@ -376,8 +398,8 @@ by constructing an appropriate _open cube_, where the missing face is
 that square. As an intermediate step, we define $\theta$ to be the
 filler for the square above.
 
-```
-    θ : PathP (λ i → g y ≡ π i) π₀ π₁
+```agda
+    θ : Square refl π₀ π₁ π
     θ i j = hfill (λ k → λ { (i = i1) → π₁ k
                            ; (i = i0) → π₀ k
                            })
@@ -386,12 +408,10 @@ filler for the square above.
 
 Observe that we can coherently alter $\theta$ to get $\iota$ below,
 which expresses that $\mathrm{ap}\ g\ p_0$ and $\mathrm{ap}\ g\ p_1$ are
-equal.
+identified.
 
 ```agda
-    ι : PathP (λ i → g (f (π i)) ≡ g y)
-              (ap g p0)
-              (ap g p1)
+    ι : Square (ap (g ∘ f) π) (ap g p0) (ap g p1) refl
     ι i j = hcomp (λ k → λ { (i = i0) → θ₀ (~ j) (~ k)
                            ; (i = i1) → θ₁ (~ j) (~ k)
                            ; (j = i0) → t (π i) (~ k)
@@ -441,8 +461,7 @@ types are considered. We're in the home stretch: Using our assumption $s
 above to get what we wanted: $p_0 ≡ p_1$.
 
 ```agda
-    sq1 : PathP (λ i → f (π i) ≡ y)
-                p0 p1
+    sq1 : Square (ap f π) p0 p1 refl
     sq1 i j = hcomp (λ k → λ { (i = i0) → s (p0 j) k
                              ; (i = i1) → s (p1 j) k
                              ; (j = i0) → s (f (π i)) k
@@ -543,9 +562,9 @@ do equivalence reasoning in the same style as equational reasoning.
 _∙e_ : ∀ {ℓ ℓ₁ ℓ₂} {A : Type ℓ} {B : Type ℓ₁} {C : Type ℓ₂}
      → A ≃ B → B ≃ C → A ≃ C
 
-_e¯¹ : ∀ {ℓ ℓ₁} {A : Type ℓ} {B : Type ℓ₁}
+_e⁻¹ : ∀ {ℓ ℓ₁} {A : Type ℓ} {B : Type ℓ₁}
     → A ≃ B → B ≃ A
-_e¯¹ eqv = Iso→Equiv ( equiv→inverse (eqv .snd)
+_e⁻¹ eqv = Iso→Equiv ( equiv→inverse (eqv .snd)
                      , record { inv  = eqv .fst
                               ; rinv = equiv→retraction (eqv .snd)
                               ; linv = equiv→section (eqv .snd)
@@ -554,29 +573,29 @@ _e¯¹ eqv = Iso→Equiv ( equiv→inverse (eqv .snd)
 <!--
 ```
 _∙e_ (f , e) (g , e') = (λ x → g (f x)) , eqv where
-  g¯¹ : isIso g
-  g¯¹ = isEquiv→isIso e'
+  g⁻¹ : isIso g
+  g⁻¹ = isEquiv→isIso e'
 
-  f¯¹ : isIso f
-  f¯¹ = isEquiv→isIso e
+  f⁻¹ : isIso f
+  f⁻¹ = isEquiv→isIso e
 
   inv : _ → _
-  inv x = f¯¹ .isIso.inv (g¯¹ .isIso.inv x)
+  inv x = f⁻¹ .isIso.inv (g⁻¹ .isIso.inv x)
 
   abstract
     right : isRightInverse inv (λ x → g (f x))
     right z =
-      g (f (f¯¹ .isIso.inv (g¯¹ .isIso.inv z))) ≡⟨ ap g (f¯¹ .isIso.rinv _) ⟩
-      g (g¯¹ .isIso.inv z)                      ≡⟨ g¯¹ .isIso.rinv _ ⟩
+      g (f (f⁻¹ .isIso.inv (g⁻¹ .isIso.inv z))) ≡⟨ ap g (f⁻¹ .isIso.rinv _) ⟩
+      g (g⁻¹ .isIso.inv z)                      ≡⟨ g⁻¹ .isIso.rinv _ ⟩
       z                                         ∎
 
     left : isLeftInverse inv (λ x → g (f x))
     left z =
-      f¯¹ .isIso.inv (g¯¹ .isIso.inv (g (f z))) ≡⟨ ap (f¯¹ .isIso.inv) (g¯¹ .isIso.linv _) ⟩
-      f¯¹ .isIso.inv (f z)                      ≡⟨ f¯¹ .isIso.linv _ ⟩
+      f⁻¹ .isIso.inv (g⁻¹ .isIso.inv (g (f z))) ≡⟨ ap (f⁻¹ .isIso.inv) (g⁻¹ .isIso.linv _) ⟩
+      f⁻¹ .isIso.inv (f z)                      ≡⟨ f⁻¹ .isIso.linv _ ⟩
       z                                         ∎
     eqv : isEquiv (λ x → g (f x))
-    eqv = isIso→isEquiv (iso (λ x → f¯¹ .isIso.inv (g¯¹ .isIso.inv x)) right left)
+    eqv = isIso→isEquiv (iso (λ x → f⁻¹ .isIso.inv (g⁻¹ .isIso.inv x)) right left)
 
 ∙-isEquiv : ∀ {ℓ ℓ₁ ℓ₂} {A : Type ℓ} {B : Type ℓ₁} {C : Type ℓ₂}
           → {f : A → B} {g : B → C}
