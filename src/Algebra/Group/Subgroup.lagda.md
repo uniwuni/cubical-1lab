@@ -83,6 +83,10 @@ record isNormal (G : Group ℓ) (N : ℙ (G .fst)) : Type ℓ where
   has-conjugateˡ : ∀ {x y} → y ∈ N → ((x ⋆ y) ⋆ x ⁻¹) ∈ N
   has-conjugateˡ yin = subst (_∈ N) associative (has-conjugate yin)
 
+  has-conjugate-inv : ∀ {x y} → y ∈ N → (x ⁻¹ ⋆ y ⋆ x) ∈ N
+  has-conjugate-inv {x = x} {y = y} yin = subst (_∈ N) (ap (λ a → (x ⁻¹) ⋆ (y ⋆ a)) inv-inv)
+    (has-conjugate {x = x ⁻¹} yin)
+
   has-comm : ∀ {x y} → (x ⋆ y) ∈ N → (y ⋆ x) ∈ N
   has-comm {x = x} {y} ∈ = subst (_∈ N) p (has-conjugate ∈)
     where
@@ -224,6 +228,7 @@ and $y \in H_2$, $xy$ is an element of $H_1 H_2$ by definition:
 
 ```agda
 module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isSubgroup G H₂) where
+
   ∈-product : {H₁ H₂ : ℙ (G .fst)} → (x y : G .fst) → x ∈ H₁ → y ∈ H₂ →
     (G .snd .GroupOn._⋆_) x y ∈ (product {G = G} H₁ H₂)
   ∈-product x y x∈ y∈ = inc (x , (y , (x∈ , y∈) , refl))
@@ -238,13 +243,13 @@ In the case that all elements in the two subgroups commute, the product
 tedious calculations:
 
 ```agda
-  product-subgroup :  ((x y : _) → x ∈ H₁ → y ∈ H₂ → (G .snd .GroupOn._⋆_) x y ≡ (G .snd .GroupOn._⋆_) y x) →
+  product-subgroup-comm :  ((x y : _) → x ∈ H₁ → y ∈ H₂ → (G .snd .GroupOn._⋆_) x y ≡ (G .snd .GroupOn._⋆_) y x) →
     isSubgroup G (product {G = G} H₁ H₂)
-  product-subgroup prod-commutes
+  product-subgroup-comm prod-commutes
     .isSubgroup.has-unit =
       inc (unit , (unit , ((sub₁ .isSubgroup.has-unit , sub₂ .isSubgroup.has-unit) , idˡ)))
     where open GroupOn (G .snd)
-  product-subgroup prod-commutes
+  product-subgroup-comm prod-commutes
     .isSubgroup.has-⋆ {x = x} {y = y} = ∥-∥-map₂ proof
     where open GroupOn (G .snd)
           proof : _
@@ -258,7 +263,7 @@ tedious calculations:
             ((x ⋆ y₁) ⋆ y₂) ≡⟨ sym associative ⟩
             (x ⋆ (y₁ ⋆ y₂)) ≡⟨ ap (x ⋆_) yprod ⟩
             x ⋆ y ∎) 
-  product-subgroup prod-commutes
+  product-subgroup-comm prod-commutes
     .isSubgroup.has-inv {x = x} = ∥-∥-map proof
     where open GroupOn (G .snd)
           proof : _
@@ -269,4 +274,53 @@ tedious calculations:
             (x₁ ⋆ x₂)⁻¹ ≡⟨ ap inverse xprod ⟩
             x ⁻¹ ∎)
 ```
+In fact, it suffices for the product of the subgroups themselves to commute:
 
+```agda
+  product-subgroup : (product {G = G} H₁ H₂) ≡ (product {G = G} H₂ H₁) → isSubgroup G (product {G = G} H₁ H₂)
+  product-subgroup prod-comm .isSubgroup.has-unit = inc (unit , (unit , ((sub₁ .isSubgroup.has-unit , sub₂ .isSubgroup.has-unit) , idˡ)))
+    where open GroupOn (G .snd)
+  product-subgroup prod-comm .isSubgroup.has-⋆ {x = x} {y = y} ax ay = ∥-∥-idem (∥-∥-map₂ proof ax ay)
+    where open GroupOn (G .snd)
+          proof : _
+          proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) (y₁ , y₂ , (y₁∈ , y₂∈) , yprod) = ∥-∥-map proof₂ x₂y₁∈H1H2
+            where x₂y₁∈H2H1 : (x₂ ⋆ y₁) ∈ product {G = G} H₂ H₁
+                  x₂y₁∈H2H1 = inc (x₂ , (y₁ , ((x₂∈ , y₁∈) , refl)))
+                  x₂y₁∈H1H2 : (x₂ ⋆ y₁) ∈ product {G = G} H₁ H₂
+                  x₂y₁∈H1H2 = transport (ap (λ a → (x₂ ⋆ y₁) ∈ a) (sym prod-comm)) x₂y₁∈H2H1
+                  proof₂ : _
+                  proof₂ (a₁ , a₂ , (a₁∈ , a₂∈) , aprod) = (x₁ ⋆ a₁) , ((a₂ ⋆ y₂) ,
+                    ((isSubgroup.has-⋆ sub₁ x₁∈ a₁∈ , isSubgroup.has-⋆ sub₂ a₂∈ y₂∈) ,
+                     (((x₁ ⋆ a₁) ⋆ (a₂ ⋆ y₂)) ≡⟨ sym associative ⟩
+                     (x₁ ⋆ (a₁ ⋆ (a₂ ⋆ y₂))) ≡⟨ ap (x₁ ⋆_) associative ⟩
+                     (x₁ ⋆ (a₁ ⋆ a₂) ⋆ y₂)  ≡⟨ ap (λ a → x₁ ⋆ (a ⋆ y₂)) aprod ⟩
+                     (x₁ ⋆ (x₂ ⋆ y₁) ⋆ y₂) ≡⟨ ap (x₁ ⋆_) (sym associative) ⟩
+                     (x₁ ⋆ (x₂ ⋆ (y₁ ⋆ y₂))) ≡⟨ ap (λ a → x₁ ⋆ (x₂ ⋆ a)) yprod ⟩
+                     (x₁ ⋆ (x₂ ⋆ y)) ≡⟨ associative ⟩
+                     ((x₁ ⋆ x₂) ⋆ y) ≡⟨ ap (_⋆ y) xprod ⟩
+                     (x ⋆ y) ∎ )))
+
+  product-subgroup prod-comm .isSubgroup.has-inv {x = x} =
+    transport (ap (λ a → x ∈ (product {G = G} H₁ H₂) → (x ⁻¹) ∈ a) (sym prod-comm)) (∥-∥-map proof)
+    where open GroupOn (G .snd)
+          proof : _
+          proof (x₁ , x₂ , (x₁∈ , x₂∈) , xprod) = (x₂ ⁻¹) , ((x₁ ⁻¹) ,
+            (((isSubgroup.has-inv sub₂ x₂∈) , (isSubgroup.has-inv sub₁ x₁∈)) ,
+            (x₂ ⁻¹ ⋆ x₁ ⁻¹ ≡⟨ sym inv-comm ⟩
+            (x₁ ⋆ x₂)⁻¹ ≡⟨ ap inverse xprod ⟩
+            x ⁻¹ ∎)))
+```
+
+More specifically, the product of a subgroup and a normal subgroup is a subgroup:
+
+```agda
+{-
+module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isNormal G H₂) where
+  
+  product-normal-subgroup : isSubgroup G (product {G = G} H₁ H₂)
+  product-normal-subgroup = product-subgroup sub₁ (sub₂ .isNormal.has-subgroup)
+    λ x y x∈ y∈ →
+      x ⋆ y ≡⟨ {!has-conjugate-inv!} ⟩
+      
+      y ⋆ x ∎
+-}

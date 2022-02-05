@@ -127,6 +127,13 @@ isProp→equiv∥-∥ : ∀ {ℓ} {P : Type ℓ} → isProp P → P ≃ ∥ P �
 isProp→equiv∥-∥ pprop = propExt pprop squash inc (∥-∥-elim (λ x → pprop) λ x → x)
 ```
 
+In particular, the double truncation of any type maps into it:
+
+```agda
+∥-∥-idem : ∀ {ℓ} {P : Type ℓ} → ∥ ∥ P ∥ ∥ → ∥ P ∥
+∥-∥-idem prf = ∥-∥-elim (λ _ → squash) id prf
+```
+
 In fact, an alternative definition of `isProp`{.Agda} is given by "being
 equivalent to your own truncation":
 
