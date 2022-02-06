@@ -9,7 +9,7 @@ module Data.Power where
 <!--
 ```agda
 private variable
-  ℓ : Level
+  ℓ ℓ' : Level
   X : Type ℓ
 ```
 -->
@@ -91,4 +91,18 @@ is nothing which guarantees that A and B are disjoint subsets.
 ```agda
 _∪_ : ℙ X → ℙ X → ℙ X
 (A ∪ B) x = ∥ A x .fst ⊎ B x .fst ∥ , squash
+```
+
+## Restriction subsets
+
+We can turn any subset of a type $X$ into a subset of the sigma type
+$\Sum_{x : X} P(x)$ by simply ignoring the second component, yielding a
+"type-set-intersection":
+
+```agda
+restrict : {ℓ ℓ' : Level} {X : Type ℓ} (P : X → Type ℓ') → ℙ X → ℙ (Σ[ x ∈ X ] (P x))
+restrict {ℓ' = ℓ'} P A (x , _) = Lift ℓ' (fst (A x)) , isHLevel-Lift 1 (snd (A x))
+
+restrict∈ : {ℓ ℓ' : Level} {X : Type ℓ} (P : X → Type ℓ') {x : X} (y : _) (A : _) → ((x , y) ∈ restrict P A) → x ∈ A
+restrict∈ P y A (lift lower) = lower
 ```

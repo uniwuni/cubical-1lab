@@ -1,3 +1,4 @@
+
 ```agda
 open import 1Lab.Prelude
 
@@ -131,6 +132,22 @@ record NormalSubgroup (G : Group ℓ) : Type (lsuc ℓ) where
     hasIsNormal : isNormal G subgroup
 
   open isNormal hasIsNormal public
+```
+
+The intersection of any subgroup $H_1$ with a normal subgroup is normal in $H_1$,
+as can be shown by what mostly amounts to lifting the proofs:
+
+```agda
+isNormal-∩ : {H₁ H₂ : ℙ (G .fst)} → (sub : isSubgroup G H₁) → isNormal G H₂ →
+  isNormal (_ , (isSubgroup→GroupOn H₁ sub)) (restrict (_∈ H₁) H₂)
+isNormal-∩ sub nrm .isNormal.has-subgroup .isSubgroup.has-unit = lift (nrm .isNormal.has-unit)
+isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-⋆ {x = (x , xprf)} {y = (y , yprf)} xin yin =
+  lift (nrm .isNormal.has-⋆ (restrict∈ (_∈ H₁) xprf H₂ xin) (restrict∈ (_∈ H₁) yprf H₂ yin))
+isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-inv {x = (x , xprf)} xin =
+  lift (nrm .isNormal.has-inv (restrict∈ (_∈ H₁) xprf H₂ xin))
+isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-conjugate {y = (y , yprf)} yin =
+  lift (nrm .isNormal.has-conjugate (restrict∈ (_∈ H₁) yprf H₂ yin))
+  where open isNormal nrm
 ```
 
 # Kernels and Images
