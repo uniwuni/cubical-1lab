@@ -401,9 +401,15 @@ module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isNor
 
   product-normal-subgroup : isSubgroup G (product {G = G} H₁ H₂)
   product-normal-subgroup = product-subgroup sub₁ (sub₂ .isNormal.has-subgroup) normal-subgroup-product-commutes
+```
 
-  normal-in-product-normal-subgroup : isNormal (isSubgroup→Group (product {G = G} H₁ H₂) product-normal-subgroup) (restrict
-    (_∈ product {G = G} H₁ H₂) H₂)
+In order to show the second isomorphism theorem which requires
+quotienting the product by $H_2$, we also need to make sure that the
+normal factor of our product is normal in the product as well:
+
+```agda
+  normal-in-product-normal-subgroup : isNormal (isSubgroup→Group (product {G = G} H₁ H₂) product-normal-subgroup)
+    (restrict (_∈ product {G = G} H₁ H₂) H₂)
   normal-in-product-normal-subgroup .isNormal.has-subgroup = product-subgroupʳ sub₁ (sub₂ .isNormal.has-subgroup) product-normal-subgroup
   normal-in-product-normal-subgroup .isNormal.has-conjugate {y = y} (lift y∈) = lift (sub₂ .isNormal.has-conjugate y∈)
 ```
