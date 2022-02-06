@@ -51,6 +51,10 @@ isSubgroup→GroupOn {G = G} H sg =
     (λ x → Σ≡Prop (λ x → H x .snd) idˡ)
   where open GroupOn (G .snd)
         open isSubgroup sg
+
+isSubgroup→Group
+  : (H : ℙ (G .fst)) → isSubgroup G H → Group _
+isSubgroup→Group {G = G} H sg = _ , isSubgroup→GroupOn {G = G} H sg
 ```
 
 Subgroups are closed under intersections:
@@ -138,16 +142,21 @@ The intersection of any subgroup $H_1$ with a normal subgroup is normal in $H_1$
 as can be shown by what mostly amounts to lifting the proofs:
 
 ```agda
-isNormal-∩ : {H₁ H₂ : ℙ (G .fst)} → (sub : isSubgroup G H₁) → isNormal G H₂ →
+isNormal-restrict : {H₁ H₂ : ℙ (G .fst)} → (sub : isSubgroup G H₁) → isNormal G H₂ →
   isNormal (_ , (isSubgroup→GroupOn H₁ sub)) (restrict (_∈ H₁) H₂)
-isNormal-∩ sub nrm .isNormal.has-subgroup .isSubgroup.has-unit = lift (nrm .isNormal.has-unit)
-isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-⋆ {x = (x , xprf)} {y = (y , yprf)} xin yin =
+isNormal-restrict sub nrm .isNormal.has-subgroup .isSubgroup.has-unit = lift (nrm .isNormal.has-unit)
+isNormal-restrict {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-⋆ {x = (x , xprf)} {y = (y , yprf)} xin yin =
   lift (nrm .isNormal.has-⋆ (restrict∈ (_∈ H₁) xprf H₂ xin) (restrict∈ (_∈ H₁) yprf H₂ yin))
-isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-inv {x = (x , xprf)} xin =
+isNormal-restrict {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-subgroup .isSubgroup.has-inv {x = (x , xprf)} xin =
   lift (nrm .isNormal.has-inv (restrict∈ (_∈ H₁) xprf H₂ xin))
-isNormal-∩ {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-conjugate {y = (y , yprf)} yin =
+isNormal-restrict {H₁ = H₁} {H₂ = H₂} sub nrm .isNormal.has-conjugate {y = (y , yprf)} yin =
   lift (nrm .isNormal.has-conjugate (restrict∈ (_∈ H₁) yprf H₂ yin))
   where open isNormal nrm
+
+NormalSubgroup-restrict : {H : ℙ (G .fst)} → (sub : isSubgroup G H) → NormalSubgroup G →
+ NormalSubgroup (_ , (isSubgroup→GroupOn H sub))
+NormalSubgroup-restrict {H = H} sub nrm .NormalSubgroup.subgroup = restrict (_∈ H) (nrm .NormalSubgroup.subgroup)
+NormalSubgroup-restrict {H = H} sub nrm .NormalSubgroup.hasIsNormal = isNormal-restrict sub (nrm .NormalSubgroup.hasIsNormal)
 ```
 
 # Kernels and Images
@@ -328,7 +337,40 @@ In fact, it suffices for the product of the subgroups themselves to commute:
             x ⁻¹ ∎)))
 ```
 
-We can then show that normal subgroups make all subgroup products commute:
+Since any of the two subgroups involved in the product has to contain the
+identity element of $G$, the product contains the subgroups themselves,
+and since they are closed under the relevant operations, they are even
+subgroups of the product, assuming the product itself forms a group.
+
+```agda
+  product-containsˡ : H₁ ⊆ (product {G = G} H₁ H₂)
+  product-containsˡ x x∈ = subst (_∈ product {G = G} H₁ H₂) idʳ x1∈
+    where open GroupOn (G .snd)
+          x1∈ : (x ⋆ unit) ∈ product {G = G} H₁ H₂
+          x1∈ = ∈-product {H₁ = H₁} {H₂ = H₂} x unit x∈ (isSubgroup.has-unit sub₂)
+  product-containsʳ : H₂ ⊆ (product {G = G} H₁ H₂)
+  product-containsʳ x x∈ = subst (_∈ product {G = G} H₁ H₂) idˡ 1x∈
+    where open GroupOn (G .snd)
+          1x∈ : (unit ⋆ x) ∈ product {G = G} H₁ H₂
+          1x∈ = ∈-product {H₁ = H₁} {H₂ = H₂} unit x (isSubgroup.has-unit sub₁) x∈
+
+  product-subgroupˡ : (prf : isSubgroup G (product {G = G} H₁ H₂)) →
+    isSubgroup (isSubgroup→Group (product {G = G} H₁ H₂) prf) (restrict (_∈ product {G = G} H₁ H₂) H₁)
+  product-subgroupˡ sub .isSubgroup.has-unit = lift (isSubgroup.has-unit sub₁)
+  product-subgroupˡ sub .isSubgroup.has-⋆ (lift x) (lift y) = lift (isSubgroup.has-⋆ sub₁ x y)
+  product-subgroupˡ sub .isSubgroup.has-inv (lift x) = lift (isSubgroup.has-inv sub₁ x)
+
+  product-subgroupʳ : (prf : isSubgroup G (product {G = G} H₁ H₂)) →
+    isSubgroup (isSubgroup→Group (product {G = G} H₁ H₂) prf) (restrict (_∈ product {G = G} H₁ H₂) H₂)
+  product-subgroupʳ sub .isSubgroup.has-unit = lift (isSubgroup.has-unit sub₂)
+  product-subgroupʳ sub .isSubgroup.has-⋆ (lift x) (lift y) = lift (isSubgroup.has-⋆ sub₂ x y)
+  product-subgroupʳ sub .isSubgroup.has-inv (lift x) = lift (isSubgroup.has-inv sub₂ x)
+
+```
+
+Finally, we show that normal subgroups make all subgroup products commute,
+implying that the product of a subgroup and a normal subgroup is itself
+a subgroup.
 
 ```agda
 module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isNormal G H₂) where
@@ -359,4 +401,11 @@ module _ {H₁ H₂ : ℙ (G .fst)} (sub₁ : isSubgroup G H₁) (sub₂ : isNor
 
   product-normal-subgroup : isSubgroup G (product {G = G} H₁ H₂)
   product-normal-subgroup = product-subgroup sub₁ (sub₂ .isNormal.has-subgroup) normal-subgroup-product-commutes
+```
+
+For convenience, we explicitly provide the group defined by the product subgroup:
+
+```agda
+  product-GroupOn : GroupOn _
+  product-GroupOn = isSubgroup→GroupOn _ product-normal-subgroup
 ```
