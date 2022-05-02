@@ -1,5 +1,5 @@
 ```agda
-open import Cat.Instances.Terminal
+open import Cat.Instances.Shape.Terminal
 open import Cat.Instances.Functor
 open import Cat.Prelude
 
@@ -19,18 +19,19 @@ open Functor
 # Comma categories
 
 The **comma category** of two functors $F : \ca{A} \to \ca{C}$ and $G :
-\ca{B} \to \ca{C}$ with common domain, written $F \downarrow G$, is the
-directed, bicategorical analogue of a [pullback] square. It consists of
-maps in $\ca{C}$ which all have their domain in the image of $F$, and
+\ca{B} \to \ca{C}$ with common codomain, written $F \downarrow G$, is
+the directed, bicategorical analogue of a [pullback] square. It consists
+of maps in $\ca{C}$ which all have their domain in the image of $F$, and
 codomain in the image of $G$.
 
 [pullback]: Cat.Diagram.Pullback.html
 
-The comma category is the universal way of completing a cospan of
-functors $A \to C \ot B$ to a homotopy commutative square like the one
-below. Note the similarity with a pullback square; However, since this
-is a bicategorical limit, rather than having an _equality_ witnessing
-the square commutes, we have a natural transformation $\theta$.
+The comma category is the universal way of completing a [cospan] of
+functors $A \to C \ot B$ to a square, like the one below, which commutes
+_up to a natural transformation_ $\theta$. Note the similarity with a
+[pullback] square.
+
+[cospan]: Cat.Instances.Shape.Cospan.html
 
 ~~~{.quiver}
 \[\begin{tikzcd}
@@ -39,24 +40,28 @@ the square commutes, we have a natural transformation $\theta$.
   \mathcal{B}     && \mathcal{C}
   \arrow["F", from=1-3, to=3-3]
   \arrow["G"', from=3-1, to=3-3]
-  \arrow["{\mathrm{dom}}", from=1-1, to=1-3]
-  \arrow["{\mathrm{cod}}"', from=1-1, to=3-1]
+  \arrow["{\id{dom}}", from=1-1, to=1-3]
+  \arrow["{\id{cod}}"', from=1-1, to=3-1]
   \arrow["\theta"{description}, Rightarrow, from=1-1, to=3-3]
 \end{tikzcd}\]
 ~~~
 
 <!--
 ```agda
-module 
-  _ {A : Precategory ao ah} 
-    {B : Precategory bo bh} 
-    {C : Precategory o h} 
+module
+  _ {A : Precategory ao ah}
+    {B : Precategory bo bh}
+    {C : Precategory o h}
     (F : Functor A C) (G : Functor B C) where
-  
-  private 
+
+  private
     module A = Precategory A
     module B = Precategory B
     import Cat.Reasoning C as C
+
+  open A.HLevel-instance
+  open B.HLevel-instance
+  open C.HLevel-instance
 ```
 -->
 
@@ -109,48 +114,38 @@ page: `↓Hom-path`{.Agda} and `↓Hom-set`{.Agda}.
 
 <!--
 ```agda
+  ↓Hom-pathp : ∀ {x x′ y y′} {p : x ≡ x′} {q : y ≡ y′}
+             → {f : ↓Hom x y} {g : ↓Hom x′ y′}
+             → (PathP _ (f .↓Hom.α) (g .↓Hom.α))
+             → (PathP _ (f .↓Hom.β) (g .↓Hom.β))
+             → PathP (λ i → ↓Hom (p i) (q i)) f g
+  ↓Hom-pathp p q i .↓Hom.α = p i
+  ↓Hom-pathp p q i .↓Hom.β = q i
+  ↓Hom-pathp {p = p} {q} {f} {g} r s i .↓Hom.sq =
+    is-prop→pathp (λ i → C.Hom-set _ _ (↓Obj.map (q i) C.∘ F₁ F (r i))
+                                       (F₁ G (s i) C.∘ ↓Obj.map (p i)))
+      (f .↓Hom.sq) (g .↓Hom.sq) i
+
   ↓Hom-path : ∀ {x y} {f g : ↓Hom x y}
             → (f .↓Hom.α ≡ g .↓Hom.α)
             → (f .↓Hom.β ≡ g .↓Hom.β)
             → f ≡ g
-  ↓Hom-path p q i .↓Hom.α = p i
-  ↓Hom-path p q i .↓Hom.β = q i
-  ↓Hom-path {x} {y} {f} {g} p q i .↓Hom.sq = 
-    isProp→PathP (λ i → C.Hom-set _ _ (↓Obj.map y C.∘ F₁ F (p i)) 
-                                      (F₁ G (q i) C.∘ ↓Obj.map x))
-      (f .↓Hom.sq) (g .↓Hom.sq) i
+  ↓Hom-path = ↓Hom-pathp
 
-  ↓Hom-set : ∀ x y → isSet (↓Hom x y)
+  ↓Obj-path : {a b : ↓Obj}
+            → (p : a .↓Obj.x ≡ b .↓Obj.x) (q : a .↓Obj.y ≡ b .↓Obj.y)
+            → PathP (λ i → Hom C (F₀ F (p i)) (F₀ G (q i))) (a .↓Obj.map) (b .↓Obj.map)
+            → a ≡ b
+  ↓Obj-path p q r i .↓Obj.x = p i
+  ↓Obj-path p q r i .↓Obj.y = q i
+  ↓Obj-path p q r i .↓Obj.map = r i
+
+  private unquoteDecl eqv = declare-record-iso eqv (quote ↓Hom)
+
+  ↓Hom-set : ∀ x y → is-set (↓Hom x y)
   ↓Hom-set a b = hl' where abstract
-    module a = ↓Obj a
-    module b = ↓Obj b
-
-    T : Type (h ⊔ bh ⊔ ah)
-    T = 
-      Σ[ α ∈ Hom A a.x b.x ] 
-      Σ[ β ∈ Hom B a.y b.y ] 
-      (b.map C.∘ F₁ F α ≡ F₁ G β C.∘ a.map)
-
-    encode : T → ↓Hom a b
-    encode (α , β , sq) .↓Hom.α = α
-    encode (α , β , sq) .↓Hom.β = β
-    encode (α , β , sq) .↓Hom.sq = sq
-
-    decode : ↓Hom a b → T
-    decode r = r .↓Hom.α , r .↓Hom.β , r .↓Hom.sq
-
-    hl : isSet T
-    hl = isHLevelΣ 2 (A.Hom-set _ _) λ _ → 
-         isHLevelΣ 2 (B.Hom-set _ _) λ _ →
-         isProp→isSet (C.Hom-set _ _ _ _)
-
-    encode∘decode : isLeftInverse encode decode
-    encode∘decode x i .↓Hom.α  = x .↓Hom.α
-    encode∘decode x i .↓Hom.β  = x .↓Hom.β
-    encode∘decode x i .↓Hom.sq = x .↓Hom.sq
-
-    hl' : isSet (↓Hom a b)
-    hl' = isHLevel-retract 2 encode decode encode∘decode hl
+    hl' : is-set (↓Hom a b)
+    hl' = is-hlevel≃ 2 (Iso→Equiv eqv e⁻¹) (hlevel 2)
 ```
 -->
 
@@ -175,7 +170,7 @@ Identities and compositions are given componentwise:
     composite : ↓Hom a c
     composite .α = g.α A.∘ f.α
     composite .β = g.β B.∘ f.β
-    composite .sq = 
+    composite .sq =
       c.map C.∘ F₁ F (g.α A.∘ f.α)    ≡⟨ ap (_ C.∘_) (F-∘ F _ _) ⟩
       c.map C.∘ F₁ F g.α C.∘ F₁ F f.α ≡⟨ C.extendl g.sq ⟩
       F₁ G g.β C.∘ b.map C.∘ F₁ F f.α ≡⟨ ap (_ C.∘_) f.sq ⟩

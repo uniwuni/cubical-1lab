@@ -6,10 +6,9 @@ module 1Lab.Type where
 
 A **universe** is a type whose inhabitants are types. In Agda, there is
 a family of universes, which, by default, is called `Set`. Rather
-recently, Agda gained [a flag] to make `Set` not act like a keyword, and
+recently, Agda gained a flag to make `Set` not act like a keyword, and
 allow renaming it in an import declaration from the `Agda.Primitive`
 module.
-
 
 ```agda
 open import Agda.Primitive
@@ -44,7 +43,7 @@ Agda comes with built-in definitions for a bunch of types:
 open import Agda.Builtin.Sigma hiding (Σ) public
 open import Agda.Builtin.Unit public
 open import Agda.Builtin.Bool public
-open import Agda.Builtin.Nat public
+open import Agda.Builtin.Nat hiding (_<_) public
 ```
 
 It does not, however, come with a built-in definition of the empty type:
@@ -99,7 +98,7 @@ this module:
 ```agda
 _∘_ : ∀ {ℓ₁ ℓ₂ ℓ₃} {A : Type ℓ₁} {B : A → Type ℓ₂} {C : (x : A) → B x → Type ℓ₃}
     → (∀ {x} → (y : B x) → C x y)
-    → (f : ∀ x → B x) 
+    → (f : ∀ x → B x)
     → ∀ x → C x (f x)
 f ∘ g = λ z → f (g z)
 

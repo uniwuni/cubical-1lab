@@ -10,8 +10,8 @@ module 1Lab.Counterexamples.Sigma where
 
 Defined normally, the _image_ of a function $f : X \to Y$ is the subset
 of $Y$ given by the elements $y : Y$ for which _there exists_ an element
-$x : X$ with $f(x) = y$. In set theoretical notation: $\mathrm{im}(f) =
-\{ y \in Y | \exists x \in X, f(x) = y \}$.
+$x : X$ with $f(x) = y$. In set theoretical notation: $\id{im}(f) = \{ y
+\in Y | \exists x \in X, f(x) = y \}$.
 
 It is a commonly held misunderstanding that when translating such a
 definition into type theory, both subsets and existential quantifiers
@@ -21,7 +21,7 @@ perhaps using "subset" to mean "`Σ` for which the type family is
 (generalised) subset inclusion], so this translation is accurate **for
 subsets**.
 
-[propositional]: agda://1Lab.HLevel#isProp
+[propositional]: agda://1Lab.HLevel#is-prop
 [a (generalised) subset inclusion]: agda://1Lab.Equiv.Embedding#Subset-proj-embedding
 
 However, let's see what happens when we naïvely translate the definition
@@ -37,17 +37,17 @@ image {A = A} {B = B} f = Σ[ y ∈ B ] Σ[ x ∈ A ] (f x ≡ y)
 ```
 
 The definition above, which could be called "Curry-Howard image", does
-not accurately represent the image of a function: $\mathrm{image}(f)
-\simeq A$, independent of $f$:
+not accurately represent the image of a function: $\id{image}(f) \simeq
+A$, independent of $f$:
 
 ```agda
 image≃domain : {f : A → B} → image f ≃ A
 image≃domain {f = f} = Iso→Equiv the-iso where
   the-iso : Iso _ _
   the-iso .fst (y , x , p) = x
-  the-iso .snd .isIso.inv x = f x , x , refl
-  the-iso .snd .isIso.rinv x = refl
-  the-iso .snd .isIso.linv (y , x , p) i = p i , x , λ j → p (i ∧ j)
+  the-iso .snd .is-iso.inv x = f x , x , refl
+  the-iso .snd .is-iso.rinv x = refl
+  the-iso .snd .is-iso.linv (y , x , p) i = p i , x , λ j → p (i ∧ j)
 ```
 
 This is a direct cubical interpretation of the following argument, which
@@ -74,4 +74,4 @@ woops = image≃domain
 `x, p i, λ j → p (i ∧ j)`, which is exactly how it is shown that
 [singletons are contractible].
 
-[singletons are contractible]: agda://1Lab.Path#isContr-Singleton
+[singletons are contractible]: agda://1Lab.Path#Singleton-is-contr

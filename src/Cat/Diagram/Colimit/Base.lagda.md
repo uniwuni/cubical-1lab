@@ -2,6 +2,7 @@
 open import Cat.Diagram.Initial
 open import Cat.Prelude
 
+import Cat.Functor.Reasoning as Func
 import Cat.Morphism
 
 module Cat.Diagram.Colimit.Base where
@@ -101,14 +102,14 @@ of cones:
 ```agda
   open Cocone
 
-  Cocone≡ : {x y : Cocone}
+  Cocone-path : {x y : Cocone}
               → (p : coapex x ≡ coapex y)
               → (∀ o → PathP (λ i → C.Hom (F.₀ o) (p i)) (ψ x o) (ψ y o))
               → x ≡ y
-  Cocone≡ p q i .coapex = p i
-  Cocone≡ p q i .ψ o = q o i
-  Cocone≡ {x = x} {y = y} p q i .commutes {x = a} {y = b} f =
-    isProp→PathP (λ i → C.Hom-set _ _ (q b i C.∘ F.₁ f) (q a i))
+  Cocone-path p q i .coapex = p i
+  Cocone-path p q i .ψ o = q o i
+  Cocone-path {x = x} {y = y} p q i .commutes {x = a} {y = b} f =
+    is-prop→pathp (λ i → C.Hom-set _ _ (q b i C.∘ F.₁ f) (q a i))
       (x .commutes f) (y .commutes f) i
 ```
 
@@ -122,25 +123,31 @@ is a morphism in $C$ between the coapicies, such that all of the
 injection maps commute.
 
 ```agda
-  record CoconeHom (x y : Cocone) : Type (o ⊔ ℓ′) where
+  record Cocone-hom (x y : Cocone) : Type (o ⊔ ℓ′) where
     no-eta-equality
     constructor cocone-hom
     field
       hom : C.Hom (x .coapex) (y .coapex)
-      commutes : ∀ {o} → hom C.∘ x .ψ o ≡ y .ψ o
+      commutes : ∀ o → hom C.∘ x .ψ o ≡ y .ψ o
 ```
+
+<!--
+```agda
+  private unquoteDecl eqv = declare-record-iso eqv (quote Cocone-hom)
+```
+-->
 
 We define yet another helper lemma that describes the path space
 of cocone morphisms.
 
 ```agda
-  open CoconeHom
+  open Cocone-hom
 
-  CoconeHom≡ : ∀ {x y} {f g : CoconeHom x y} → f .hom ≡ g .hom → f ≡ g
-  CoconeHom≡ p i .hom = p i
-  CoconeHom≡ {x = x} {y = y} {f = f} {g = g} p i .commutes {o} j =
-    isSet→SquareP (λ i j → C.Hom-set _ _)
-      (λ j → p j C.∘ x .ψ o) (f .commutes) (g .commutes) refl i j
+  Cocone-hom-path : ∀ {x y} {f g : Cocone-hom x y} → f .hom ≡ g .hom → f ≡ g
+  Cocone-hom-path p i .hom = p i
+  Cocone-hom-path {x = x} {y = y} {f = f} {g = g} p i .commutes o j =
+    is-set→squarep (λ i j → C.Hom-set _ _)
+      (λ j → p j C.∘ x .ψ o) (f .commutes o) (g .commutes o) refl i j
 ```
 
 Now, we can define the category of cocones over a given diagram:
@@ -150,45 +157,28 @@ Now, we can define the category of cocones over a given diagram:
   Cocones = cat where
     open Precategory
 
-    compose : ∀ {x y z} → CoconeHom y z → CoconeHom x y → CoconeHom x z
+    compose : ∀ {x y z} → Cocone-hom y z → Cocone-hom x y → Cocone-hom x z
     compose K L .hom = K .hom C.∘ L .hom
-    compose {x = x} {y = y} {z = z} K L .commutes {o} =
-      (K .hom C.∘ L .hom) C.∘ x .ψ o ≡⟨ C.pullr (L .commutes) ⟩
-      K .hom C.∘ y .ψ o              ≡⟨ K .commutes ⟩
+    compose {x = x} {y = y} {z = z} K L .commutes o =
+      (K .hom C.∘ L .hom) C.∘ x .ψ o ≡⟨ C.pullr (L .commutes o) ⟩
+      K .hom C.∘ y .ψ o              ≡⟨ K .commutes o ⟩
       z .ψ o                         ∎
 
     cat : Precategory _ _
     cat .Ob = Cocone
-    cat .Hom = CoconeHom
-    cat .id = cocone-hom C.id (C.idl _)
+    cat .Hom = Cocone-hom
+    cat .id = cocone-hom C.id (λ _ → C.idl _)
     cat ._∘_ = compose
-    cat .idr f = CoconeHom≡ (C.idr (f .hom))
-    cat .idl f = CoconeHom≡ (C.idl (f .hom))
-    cat .assoc f g h = CoconeHom≡ (C.assoc (f .hom) (g .hom) (h .hom))
+    cat .idr f = Cocone-hom-path (C.idr (f .hom))
+    cat .idl f = Cocone-hom-path (C.idl (f .hom))
+    cat .assoc f g h = Cocone-hom-path (C.assoc (f .hom) (g .hom) (h .hom))
 
 ```
 
 <!--
 ```agda
-    cat .Hom-set x y = isHLevel-retract 2 pack unpack pack∘unpack hl
-      where abstract
-        T : Type (o ⊔ ℓ′)
-        T = Σ[ hom ∈ C.Hom (x .coapex) (y .coapex) ]
-            (∀ o → hom C.∘ x .ψ o ≡ y .ψ o)
-
-        pack : T → CoconeHom x y
-        pack x = cocone-hom (x .fst) (x .snd _)
-
-        unpack : CoconeHom x y → T
-        unpack r = r .hom , λ _ → r .commutes
-
-        pack∘unpack : isLeftInverse pack unpack
-        pack∘unpack x i .hom = x .hom
-        pack∘unpack x i .commutes = x .commutes
-
-        hl : isSet T
-        hl = isHLevelΣ 2 (C.Hom-set _ _) 
-              (λ _ → isHLevelΠ 2 λ _ → isProp→isSet (C.Hom-set _ _ _ _))
+    cat .Hom-set x y = is-hlevel≃ 2 (Iso→Equiv eqv e⁻¹) (hlevel 2)
+      where open C.HLevel-instance
 ```
 -->
 
@@ -202,8 +192,8 @@ it's the initial object! This leads to the following terse definition:
 A colimit over a diagram is an initial object in the category of
 cocones over that diagram.
 ```
-  IsColimit : Cocone → Type _
-  IsColimit K = isInitial Cocones K
+  is-colimit : Cocone → Type _
+  is-colimit K = is-initial Cocones K
 
   Colimit : Type _
   Colimit = Initial Cocones
@@ -227,32 +217,50 @@ module _ {o₁ h₁ o₂ h₂ o₃ h₃ : _}
     module D = Precategory D
     module C = Precategory C
     module J = Precategory J
-  
+    module F = Func F
+
   open Functor
 ```
 -->
 
 # Preservation of Colimits
 
-Because a cocone is a commutative diagram, any given functor
-$F : \ca{C} \to \ca{D}$ takes cones $\ca{C}$ to cones in $\ca{D}$,
-as functors preserve commutative diagrams.
+Because a cocone is a commutative diagram, any given functor $F : \ca{C}
+\to \ca{D}$ takes cocones in $\ca{C}$ to cocones in $\ca{D}$, as
+functors preserve commutative diagrams.
 
 ```agda
-  F-map-Cocone : Cocone Dia → Cocone (F F∘ Dia)
-  F-map-Cocone x .Cocone.coapex = F .F₀ (Cocone.coapex x)
-  F-map-Cocone x .Cocone.ψ f = F .F₁ (Cocone.ψ x f)
-  F-map-Cocone x .Cocone.commutes {y = y} f =
-    F .F₁ (Cocone.ψ x y) D.∘ F .F₁ (F₁ Dia f) ≡˘⟨ F-∘ F _ _ ⟩
-    F .F₁ ((Cocone.ψ x y) C.∘ (F₁ Dia f)) ≡⟨ ap (F .F₁) (Cocone.commutes x _) ⟩
-    F .F₁ (Cocone.ψ x _) ∎
+  F-map-cocone : Cocone Dia → Cocone (F F∘ Dia)
+  F-map-cocone x .Cocone.coapex = F.₀ (Cocone.coapex x)
+  F-map-cocone x .Cocone.ψ f = F.₁ (Cocone.ψ x f)
+  F-map-cocone x .Cocone.commutes {y = y} f =
+    F.₁ (Cocone.ψ x y) D.∘ F .F₁ _ ≡⟨ F.collapse (Cocone.commutes x _) ⟩
+    F.₁ (Cocone.ψ x _)             ∎
 ```
 
-Though functors must take cones to cones, they may not necessarily take
-colimiting cocones to colimiting cocones! When a functor does, we say
-that it _preserves_ colimits.
+Though functors must take cocones to cocones, they may not necessarily
+take colimiting cocones to colimiting cocones! When a functor does, we
+say that it _preserves_ colimits.
 
 ```agda
-  PreservesColimit : Colimit Dia → Type _
-  PreservesColimit o = isInitial (Cocones (F F∘ Dia)) (F-map-Cocone (Initial.bot o))
+  Preserves-colimit : Cocone Dia → Type _
+  Preserves-colimit K = is-colimit Dia K → is-colimit (F F∘ Dia) (F-map-cocone K)
+```
+
+## Cocompleteness
+
+A category is **cocomplete** if admits for limits of arbitrary shape.
+However, in the presence of excluded middle, if a category admits
+coproducts indexed by its class of morphisms, then it is automatically
+[thin]. Since excluded middle is independent of type theory, we can not
+prove that any non-thin categories have arbitrary colimits.
+
+Instead, categories are cocomplete _with respect to_ a pair of
+universes: A category is **$(o, \ell)$-cocomplete** if it has colimits
+for any diagram indexed by a precategory with objects in $\ty\ o$ and
+morphisms in $\ty\ \ell$.
+
+```agda
+is-cocomplete : ∀ {oc ℓc} o ℓ → Precategory oc ℓc → Type _
+is-cocomplete o ℓ C = ∀ {D : Precategory o ℓ} (F : Functor D C) → Colimit F
 ```

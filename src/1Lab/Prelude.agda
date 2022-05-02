@@ -22,11 +22,11 @@ open import 1Lab.Equiv.HalfAdjoint public
 open import 1Lab.Univalence public
 open import 1Lab.Univalence.SIP public
 open import 1Lab.Univalence.SIP.Auto
-  using ( autoStrTm )
+  using ( auto-str-term )
 open import 1Lab.Univalence.SIP.Record public
 open import 1Lab.Univalence.SIP.Record.Base public
   using ( record: ; _field[_by_] ; _axiom[_by_]
-        ; autoRecord
+        ; record-desc
         )
 
 open import 1Lab.Type.Pi public
@@ -34,3 +34,6 @@ open import 1Lab.Type.Dec public
 open import 1Lab.Type.Sigma public
 
 open import 1Lab.HIT.Truncation public
+
+open import 1Lab.Reflection.Record
+  using ( declare-record-iso ) public

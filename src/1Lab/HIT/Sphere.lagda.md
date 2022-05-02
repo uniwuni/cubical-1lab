@@ -13,9 +13,9 @@ module 1Lab.HIT.Sphere where
 # The -1 and 0 Spheres
 
 In classical topology, the _topological space_ $S^n$ is typically
-defined as the subspace of $\mathbb{R}^{n+1}$ consisting of all points
+defined as the subspace of $\bb{R}^{n+1}$ consisting of all points
 at unit distance from the origin. We see from this definition that the
-$0$-sphere is the discrete two point space $\{-1, 1\} \subset \mathbb{R}$,
+$0$-sphere is the discrete two point space $\{-1, 1\} \subset \bb{R}$,
 and that the $-1$ sphere is the empty subspace $\varnothing \subset \{0\}$.
 We will recycle existing types and define:
 
@@ -33,10 +33,10 @@ the case for this constructor does not need to be written, this makes
 the proof look rather tautologous.
 
 ```agda
-open isIso
+open is-iso
 
 SuspS⁻¹≃S⁰ : Susp S⁻¹ ≡ S⁰
-SuspS⁻¹≃S⁰ = ua (SuspS⁻¹→S⁰ , isIso→isEquiv iso-pf) where
+SuspS⁻¹≃S⁰ = ua (SuspS⁻¹→S⁰ , is-iso→is-equiv iso-pf) where
   SuspS⁻¹→S⁰ : Susp S⁻¹ → S⁰
   SuspS⁻¹→S⁰ N = true
   SuspS⁻¹→S⁰ S = false
@@ -45,7 +45,7 @@ SuspS⁻¹≃S⁰ = ua (SuspS⁻¹→S⁰ , isIso→isEquiv iso-pf) where
   S⁰→SuspS⁻¹ true = N
   S⁰→SuspS⁻¹ false = S
 
-  iso-pf : isIso SuspS⁻¹→S⁰
+  iso-pf : is-iso SuspS⁻¹→S⁰
   iso-pf .inv = S⁰→SuspS⁻¹
   iso-pf .rinv false = refl
   iso-pf .rinv true = refl
@@ -74,7 +74,7 @@ that `Sⁿ⁻¹ 2` is equivalent to our previous definition of `S¹`:
 
 ```agda
 SuspS⁰≃S¹ : Sⁿ⁻¹ 2 ≡ S¹
-SuspS⁰≃S¹ = ua (SuspS⁰→S¹ , isIso→isEquiv iso-pf) where
+SuspS⁰≃S¹ = ua (SuspS⁰→S¹ , is-iso→is-equiv iso-pf) where
 ```
 
 In `Sⁿ⁻¹ 2`, we have two point constructors joined by two paths, while in
@@ -108,14 +108,14 @@ avoided by working with transports instead of dependent paths, and then by
 using lemmas on transport in pathspaces. </summary>
 
 ```agda
-  iso-pf : isIso SuspS⁰→S¹
+  iso-pf : is-iso SuspS⁰→S¹
   iso-pf .inv = S¹→SuspS⁰
   iso-pf .rinv base = refl
   iso-pf .rinv (loop i) =
     ap (λ p → p i)
       (ap SuspS⁰→S¹ (merid N ∙ sym (merid S))  ≡⟨ ap-comp-path SuspS⁰→S¹ (merid N) (sym (merid S))⟩
       loop ∙ refl                              ≡⟨ ∙-id-r loop ⟩
-      loop                                     ∎) 
+      loop                                     ∎)
   iso-pf .linv N = refl
   iso-pf .linv S = merid S
   iso-pf .linv (merid N i) j =

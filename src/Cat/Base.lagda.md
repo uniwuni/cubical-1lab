@@ -1,7 +1,10 @@
 ```agda
+open import 1Lab.Reflection.Record
 open import 1Lab.Equiv.Fibrewise
 open import 1Lab.HLevel.Retracts
+open import 1Lab.HLevel.Universe
 open import 1Lab.Univalence
+open import 1Lab.Rewrite
 open import 1Lab.HLevel
 open import 1Lab.Equiv
 open import 1Lab.Path
@@ -20,6 +23,7 @@ has an extra condition: Isomorphic objects must be identified.
 
 ```agda
 record Precategory (o h : Level) : Type (lsuc (o ⊔ h)) where
+  no-eta-equality
 ```
 
 A _precategory_ is a "proof-relevant preorder". In a preordered set $(A,
@@ -31,7 +35,7 @@ A _precategory_ is a "proof-relevant preorder". In a preordered set $(A,
 
 In a precategory, the condition that $a \le b$ be a proposition is
 relaxed: A precategory has a `type of objects`{.Agda ident=Ob} and, between
-each $x, y$, a **set** $\mathrm{Hom}(x, y)$ of relations (or maps). The
+each $x, y$, a **set** $\id{Hom}(x, y)$ of relations (or maps). The
 name Hom is historical and it betrays the original context in which
 categories where employed: algebra(ic topology), where the maps in
 question are **hom**omorphisms.
@@ -50,7 +54,7 @@ well-behaved, we do actually mean _set_: A type of
 
 ```agda
   field
-    Hom-set : (x y : Ob) → isSet (Hom x y)
+    Hom-set : (x y : Ob) → is-set (Hom x y)
 ```
 
 If you are already familiar with the definition of precategory there are
@@ -90,7 +94,7 @@ are, respectively, the `identity morphisms`{.Agda} and `composition of
 morphisms`{.Agda ident="_∘_"}. Unlike in the proof-irrelevant case, in
 which an inhabitant of $x \le y$ merely witnesses that two things are
 related, these operations _matter_, and thus must satisfy laws:
-  
+
 ```
   field
     idr : ∀ {x y} (f : Hom x y) → f ∘ id ≡ f
@@ -102,11 +106,20 @@ elements for the composition operation, both on the left and on the
 right. The "two" associativity laws (below) say that both ways of writing
 parentheses around a composition of three morphisms is equal: $(f \circ
 g) \circ h = f \circ (g \circ h)$.
-    
+
 ```
     assoc : ∀ {w x y z} (f : Hom y z) (g : Hom x y) (h : Hom w x)
           → f ∘ (g ∘ h) ≡ (f ∘ g) ∘ h
 ```
+
+<!--
+```agda
+  module HLevel-instance where
+    instance
+      H-Level-Hom : ∀ {x y} {k} → H-Level (Hom x y) (2 + k)
+      H-Level-Hom = basic-instance 2 (Hom-set _ _)
+```
+-->
 
 ## Opposites
 
@@ -114,8 +127,8 @@ A common theme throughout precategory theory is that of _duality_: The dual
 of a categorical concept is same concept, with "all the arrows
 inverted". To make this formal, we introduce the idea of _opposite
 categories_: The opposite of $C$, written $C^{op}$, has the same
-`objects`{.Agda}, but with $\mathrm{Hom}_{C^{op}}(x, y) =
-\mathrm{Hom}_{C}(y, x)$.
+`objects`{.Agda}, but with $\id{Hom}_{C^{op}}(x, y) =
+\id{Hom}_{C}(y, x)$.
 
 ```agda
 infixl 60 _^op
@@ -140,7 +153,7 @@ Agda computes, is called _definitional_.
 
 The left and right identity laws are swapped for the construction of the
 opposite precategory: For `idr`{.Agda} one has to show $f \circ_{op}
-\mathrm{id} = f$, which computes into having to show that $\mathrm{id}
+\id{id} = f$, which computes into having to show that $\id{id}
 \circ_op{f} = f$. The case for `idl`{.Agda} is symmetric.
 
 ```agda
@@ -153,14 +166,29 @@ opposite precategory $C^{op}$. What we have to show is - by the type of
 \circ_{op} h$. This computes into $(h \circ g) \circ f = h \circ (g
 \circ f)$ - which is exactly what `sym (assoc C h g f)` shows!
 
-Taking opposite categories is an involution. Since `sym (sym p) = p` by
-definition, taking opposite categories is also definitionally
-involutive.
-
 ```agda
-_ : ∀ {o₁ h₁} {C : Precategory o₁ h₁} → (C ^op) ^op ≡ C
-_ = refl
+C^op^op≡C : ∀ {o ℓ} {C : Precategory o ℓ} → C ^op ^op ≡ C
+C^op^op≡C {C = C} i = precat i where
+  open Precategory
+  precat : C ^op ^op ≡ C
+  precat i .Ob = C .Ob
+  precat i .Hom = C .Hom
+  precat i .Hom-set = C .Hom-set
+  precat i .id = C .id
+  precat i ._∘_ = C ._∘_
+  precat i .idr = C .idr
+  precat i .idl = C .idl
+  precat i .assoc = C .assoc
 ```
+
+<!--
+```agda
+private
+  precategory-double-dual : ∀ {o ℓ} {C : Precategory o ℓ} → C ^op ^op ≡rw C
+  precategory-double-dual = make-rewrite C^op^op≡C
+{-# REWRITE precategory-double-dual #-}
+```
+-->
 
 ## The precategory of Sets
 
@@ -169,7 +197,7 @@ of that level. This assembles into a `precategory`{.Agda
 ident=Precategory} quite nicely, since functions preserve h-levels.
 
 [universe level]: agda://1Lab.Type
-[all sets]: agda://1Lab.HLevel#Set
+[all sets]: agda://1Lab.HLevel.Universe#Set
 
 ```agda
 module _ where
@@ -177,9 +205,9 @@ module _ where
 
   Sets : (o : _) → Precategory (lsuc o) o
   Sets o .Ob = Set o
-  Sets o .Hom A B = A .fst → B .fst
-  Sets o .Hom-set _ (B , bset) f g p q i j a =
-    bset (f a) (g a) (happly p a) (happly q a) i j
+  Sets o .Hom A B = ∣ A ∣ → ∣ B ∣
+  Sets o .Hom-set _ B f g p q i j a =
+    B .is-tr (f a) (g a) (happly p a) (happly q a) i j
   Sets o .id x = x
   Sets o ._∘_ f g x = f (g x)
   Sets o .idl f = refl
@@ -189,6 +217,7 @@ module _ where
 
 # Functors
 
+<!--
 ```agda
 record
   Functor
@@ -203,6 +232,7 @@ record
     module C = Precategory C
     module D = Precategory D
 ```
+-->
 
 Since a category is an algebraic structure, there is a natural
 definition of _homomorphism of categories_ defined in the same fashion
@@ -222,7 +252,7 @@ between Hom-sets.
 ```
 
 A Functor $F : C \to D$ consists of a `function between the object
-sets`{.Agda ident="F₀"} - $F_0 : \mathrm{Ob}(C) \to \mathrm{Ob}(D)$, and
+sets`{.Agda ident="F₀"} - $F_0 : \id{Ob}(C) \to \id{Ob}(D)$, and
 a `function between Hom-sets`{.Agda ident="F₁"} - which takes $f : x \to
 y \in C$ to $F_1(f) : F_0(x) \to F_0(y) \in D$.
 
@@ -260,12 +290,31 @@ C^{op} \to D^{op}$.
   F-∘ op f g = F-∘ g f
 ```
 
+<!--
+```agda
+F^op^op≡F : ∀ {o ℓ o′ ℓ′} {C : Precategory o ℓ} {D : Precategory o′ ℓ′} {F : Functor C D}
+          → Functor.op (Functor.op F) ≡ F
+F^op^op≡F {F = F} i .Functor.F₀ = F .Functor.F₀
+F^op^op≡F {F = F} i .Functor.F₁ = F .Functor.F₁
+F^op^op≡F {F = F} i .Functor.F-id = F .Functor.F-id
+F^op^op≡F {F = F} i .Functor.F-∘ = F .Functor.F-∘
+
+private
+  functor-double-dual
+    : ∀ {o ℓ o′ ℓ′} {C : Precategory o ℓ} {D : Precategory o′ ℓ′} {F : Functor C D}
+    → Functor.op (Functor.op F) ≡rw F
+  functor-double-dual = make-rewrite F^op^op≡F
+{-# REWRITE functor-double-dual #-}
+```
+-->
+
 ## Composition
 
 ```agda
 _F∘_ : ∀ {o₁ h₁ o₂ h₂ o₃ h₃}
-       {C : Precategory o₁ h₁} {D : Precategory o₂ h₂} {E : Precategory o₃ h₃}
+         {C : Precategory o₁ h₁} {D : Precategory o₂ h₂} {E : Precategory o₃ h₃}
      → Functor D E → Functor C D → Functor C E
+_F∘_ {C = C} {D} {E} F G = comps
 ```
 
 Functors, being made up of functions, can themselves be composed. The
@@ -273,8 +322,8 @@ object mapping of $(F \circ G)$ is given by $F_0 \circ G_0$, and
 similarly for the morphism mapping. Alternatively, composition of
 functors is a categorification of the fact that monotone maps compose.
 
+<!--
 ```agda
-_F∘_ {C = C} {D} {E} F G = record { F₀ = F₀ ; F₁ = F₁ ; F-id = F-id ; F-∘ = F-∘ }
   where
     module C = Precategory C
     module D = Precategory D
@@ -282,7 +331,10 @@ _F∘_ {C = C} {D} {E} F G = record { F₀ = F₀ ; F₁ = F₁ ; F-id = F-id ; 
 
     module F = Functor F
     module G = Functor G
+```
+-->
 
+```agda
     F₀ : C.Ob → E.Ob
     F₀ x = F.F₀ (G.F₀ x)
 
@@ -307,14 +359,23 @@ the witnesses that $F$ and $G$ are functorial.
           F.F₁ (G.F₁ (f C.∘ g))     ≡⟨ ap F.F₁ (G.F-∘ f g) ⟩
           F.F₁ (G.F₁ f D.∘ G.F₁ g)  ≡⟨ F.F-∘ _ _ ⟩
           F₁ f E.∘ F₁ g             ∎
+
+    comps : Functor _ _
+    comps .Functor.F₀ = F₀
+    comps .Functor.F₁ = F₁
+    comps .Functor.F-id = F-id
+    comps .Functor.F-∘ = F-∘
 ```
 
-<!--
-The identity function (twice) is a functor $C \to C$. These composition
-and identities assemble into a category, where the objects are
-categories: [Cat](agda://Cat.Instances.Cat.Base#Cat). The
-construction of Cat is not in this module for performance reasons.
--->
+The identity functor can be defined using the identity funct_ion_ for
+both its object and morphism mappings. That functors have an identity
+and compose would seem to imply that categories form a category:
+However, since there is no upper bound on the h-level of `Ob`{.Agda}, we
+can not form a "category of categories". If we _do_ impose a bound,
+however, we can obtain a category of [strict categories], those which
+have a set of objects.
+
+[strict categories]: Cat.Instances.StrictCat.html
 
 ```agda
 Id : ∀ {o₁ h₁} {C : Precategory o₁ h₁} → Functor C C
@@ -336,7 +397,7 @@ category, notated $[C, D]$ - the [functor category] between $C$ and $D$.
 ```agda
 record _=>_ {o₁ h₁ o₂ h₂}
             {C : Precategory o₁ h₁}
-            {D : Precategory o₂ h₂} 
+            {D : Precategory o₂ h₂}
             (F G : Functor C D)
       : Type (o₁ ⊔ h₁ ⊔ h₂)
   where
@@ -382,33 +443,6 @@ _components_, where the component at $x$ is a map $F(x) \to G(x)$. The
                → η y D.∘ F.₁ f ≡ G.₁ f D.∘ η x
 ```
 
-<!--
-Alternatively, natural transformations can be thought of as [homotopies
-between functors](agda://Cat.Functor.NatTrans.Homotopy). That
-module contains a direct proof of the correspondence, but an argument by
-abstract nonsense is even simpler to write down: Since [Cat is cartesian
-closed](agda://Cat.Instances.Cat.Closed#Cat-closed), there is [an
-isomorphism of Hom-sets](agda://Cat.Functor.Adjoints) from the
-[tensor-hom
-adjunction](agda://Cat.Structure.CartesianClosed#Tensor⊣Hom)
-
-$$
-\mathrm{Hom}_{\mathrm{Cat}}(C \times \left\{0 \le 1\right\}, D) \simeq
-\mathrm{Hom}_{\mathrm{Cat}}(\left\{0 \le 1\right\}, [C, D])
-$$
-
-Since a functor from [the interval
-category](agda://Cat.Instances.Interval) $\left\{0 \le 1\right\}$
-amounts to a choice of morphism, we conclude that a functor $C \times
-\left\{0\le 1\right\} \to D$ is the same as a natural transformation $C
-\To D$. There is more to this correspondence: the [geometric
-realisation] of a natural transformation is a [homotopy in the
-topological sense].
-
-[geometric realisation]: https://ncatlab.org/nlab/show/geometric+realization+of+categories
-[homotopy in the topological sense]: https://ncatlab.org/nlab/show/homotopy
--->
-
 Natural transformations also dualize. The opposite of $\eta : F
 \To G$ is $\eta^{op} : G^{op} \To F^{op}$.
 
@@ -420,14 +454,25 @@ Natural transformations also dualize. The opposite of $\eta : F
     }
 ```
 
-We verify that natural transformations are [sets] by showing that `F =>
-G` is equivalent to a Σ-type which can be shown to be a set by the
-closure properties of h-levels.
-
+<!--
 ```agda
+module _ where
+  open Precategory
+  open Functor
+
+  Const : ∀ {o ℓ o′ ℓ′} {C : Precategory o ℓ} {D : Precategory o′ ℓ′}
+        → Ob D → Functor C D
+  Const {D = D} x .F₀ _ = x
+  Const {D = D} x .F₁ _ = id D
+  Const {D = D} x .F-id = refl
+  Const {D = D} x .F-∘ _ _ = sym (idr D _)
+
+infixr 30 _F∘_
+infix 20 _=>_
+
 module _ {o₁ h₁ o₂ h₂}
          {C : Precategory o₁ h₁}
-         {D : Precategory o₂ h₂} 
+         {D : Precategory o₂ h₂}
          {F G : Functor C D} where
   private
     module F = Functor F
@@ -436,39 +481,22 @@ module _ {o₁ h₁ o₂ h₂}
     module C = Precategory C
 
   open _=>_
-
-  isSet-Nat : isSet (F => G)
-  isSet-Nat = isHLevel-retract 2 NT'→NT NT→NT' prf NT'-isSet where
-    NT' : Type _
-    NT' = Σ[ eta ∈ ((x : _) → D.Hom (F.₀ x) (G.₀ x)) ]
-            ((x y : _) (f : C.Hom x y) → eta y D.∘ F.₁ f ≡ G.₁ f D.∘ eta x)
-    
-    NT'→NT : NT' → F => G
-    NT'→NT (eta , is-n) .η = eta
-    NT'→NT (eta , is-n) .is-natural = is-n
-
-    NT→NT' : F => G → NT'
-    NT→NT' x = x .η , x .is-natural
-    
-    prf : isRightInverse NT→NT' NT'→NT
-    prf x i .η = x .η
-    prf x i .is-natural = x .is-natural
 ```
+-->
 
-The type `NT'`{.Agda} is a literal restatement of the definition of
-`_=>_`{.Agda} using `Σ`{.Agda} rather than an Agda record. The trade-off
-is that a record has semantic information (the names `η`{.Agda} and
-`is-natural`{.Agda} mean more than `fst` and `snd`), but a `Σ`{.Agda}
-can be proven to be a set compositionally:
+Since the type of natural transformations is defined as a record, we can
+not _a priori_ reason about its h-level in a convenient way. However,
+using Agda's metaprogramming facilities (both reflection _and_ instance
+search), we can automatically derive an equivalence between the type of
+natural transformations and a certain $\Sigma$ type; This type can then
+be shown to be a set using the standard `hlevel`{.Agda} machinery.
 
 ```agda
-    NT'-isSet : isSet NT'
-    NT'-isSet =
-      isHLevelΣ 2 (isHLevelΠ 2 λ x → D.Hom-set _ _)
-                  (λ _ → isHLevelΠ 2
-                    λ _ → isHLevelΠ 2
-                    λ _ → isHLevelΠ 2
-                    λ _ x y p q → isHLevel-suc 2 (D.Hom-set _ _) _ _ x y p q) 
+  private unquoteDecl eqv = declare-record-iso eqv (quote _=>_)
+  Nat-is-set : is-set (F => G)
+  Nat-is-set = is-hlevel≃ 2 (Iso→Equiv eqv e⁻¹) (hlevel 2) where
+    open C.HLevel-instance
+    open D.HLevel-instance
 ```
 
 Another fundamental lemma is that equality of natural transformations
@@ -476,15 +504,15 @@ depends only on equality of the family of morphisms, since being natural
 is a proposition:
 
 ```agda
-  Nat-PathP : {F' G' : Functor C D}
+  Nat-pathp : {F' G' : Functor C D}
             → (p : F ≡ F') (q : G ≡ G')
             → {a : F => G} {b : F' => G'}
             → (∀ x → PathP _ (a .η x) (b .η x))
             → PathP (λ i → p i => q i) a b
-  Nat-PathP p q path i .η x = path x i
-  Nat-PathP p q {a} {b} path i .is-natural x y f =
-    isProp→PathP 
-      (λ i → D.Hom-set _ _ 
+  Nat-pathp p q path i .η x = path x i
+  Nat-pathp p q {a} {b} path i .is-natural x y f =
+    is-prop→pathp
+      (λ i → D.Hom-set _ _
         (path y i D.∘ Functor.F₁ (p i) f) (Functor.F₁ (q i) f D.∘ path x i))
       (a .is-natural x y f)
       (b .is-natural x y f) i
@@ -492,5 +520,5 @@ is a proposition:
   Nat-path : {a b : F => G}
            → ((x : _) → a .η x ≡ b .η x)
            → a ≡ b
-  Nat-path = Nat-PathP refl refl
+  Nat-path = Nat-pathp refl refl
 ```

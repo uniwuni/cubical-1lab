@@ -33,22 +33,26 @@ and $g$.
 ~~~
 
 ```agda
-record IsCoequaliser {E} (f g : Hom A B) (coeq : Hom B E) : Type (o ⊔ ℓ) where
+record is-coequaliser {E} (f g : Hom A B) (coeq : Hom B E) : Type (o ⊔ ℓ) where
   field
     coequal    : coeq ∘ f ≡ coeq ∘ g
-    coequalize : ∀ {F} {e′ : Hom B F} (p : e′ ∘ f ≡ e′ ∘ g) → Hom E F
-    universal  : ∀ {F} {e′ : Hom B F} (p : e′ ∘ f ≡ e′ ∘ g)
-                 → coequalize p ∘ coeq ≡ e′
+    coequalise : ∀ {F} {e′ : Hom B F} (p : e′ ∘ f ≡ e′ ∘ g) → Hom E F
+    universal  : ∀ {F} {e′ : Hom B F} {p : e′ ∘ f ≡ e′ ∘ g}
+               → coequalise p ∘ coeq ≡ e′
+
     unique     : ∀ {F} {e′ : Hom B F} {p : e′ ∘ f ≡ e′ ∘ g} {colim : Hom E F}
-                 → e′ ≡ colim ∘ coeq
-                 → colim ≡ coequalize p
+               → e′ ≡ colim ∘ coeq
+               → colim ≡ coequalise p
 
-  unique₂ : (p q : h ∘ f ≡ h ∘ g) → coequalize p ≡ coequalize q
-  unique₂ p q = unique (sym (universal p))
+  unique₂
+    : ∀ {F} {e′ : Hom B F} {p : e′ ∘ f ≡ e′ ∘ g} {colim' colim'' : Hom E F}
+    → e′ ≡ colim' ∘ coeq
+    → e′ ≡ colim'' ∘ coeq
+    → colim' ≡ colim''
+  unique₂ {p = p} q r = unique {p = p} q ∙ sym (unique r)
 
-  id-coequalize : id ≡ coequalize coequal
-  id-coequalize = unique (sym (idl _))
-
+  id-coequalise : id ≡ coequalise coequal
+  id-coequalise = unique (sym (idl _))
 ```
 
 There is also a convenient bundling of an coequalising arrow together with
@@ -59,9 +63,26 @@ record Coequaliser (f g : Hom A B) : Type (o ⊔ ℓ) where
   field
     {coapex}  : Ob
     coeq      : Hom B coapex
-    hasIsCoeq : IsCoequaliser f g coeq
+    has-is-coeq : is-coequaliser f g coeq
 
-  open IsCoequaliser hasIsCoeq public
+  open is-coequaliser has-is-coeq public
 ```
 
+## Coequalisers are epic
 
+Dually to the situation with [equalisers], coequaliser arrows are always
+[epic]:
+
+[epic]: Cat.Morphism.html#epis
+
+```agda
+is-coequaliser→is-epic
+  : ∀ {E} (coequ : Hom A E)
+  → is-coequaliser f g coequ
+  → is-epic coequ
+is-coequaliser→is-epic {f = f} {g = g} equ equalises h i p =
+  h                            ≡⟨ unique (sym p) ⟩
+  coequalise (extendr coequal) ≡˘⟨ unique refl ⟩
+  i                            ∎
+  where open is-coequaliser equalises
+```

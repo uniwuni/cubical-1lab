@@ -1,6 +1,7 @@
 ```agda
-open import 1Lab.Prelude
-
+open import Algebra.Group.Cat.Base
+open import Algebra.Group.Ab
+open import Algebra.Prelude
 open import Algebra.Group
 
 open import Data.Set.Coequaliser
@@ -19,7 +20,7 @@ private variable
 
 ```agda
 module _ (Grp@(G , gst) : Group ℓ) where
-  private module G = GroupOn gst
+  private module G = Group-on gst
   open G
 ```
 
@@ -75,12 +76,12 @@ Showing these two conditions isn't _hard_, but it does involve a lot of
 very tedious algebra. See for yourself:
 
 ```agda
-      l1 : ∀ a ((x , y , z) : G × G × G) 
+      l1 : ∀ a ((x , y , z) : G × G × G)
          → inc^ab (a ⋆ x ⋆ y ⋆ z) ≡ inc^ab (a ⋆ x ⋆ z ⋆ y)
       l1 a (x , y , z) =
-        inc^ab (a ⋆ x ⋆ y ⋆ z)           ≡⟨ ap inc^ab associative ⟩ 
-        inc^ab ((a ⋆ x) ⋆ y ⋆ z) {- 1 -} ≡⟨ ab-comm _ _ _ ⟩ 
-        inc^ab ((a ⋆ x) ⋆ z ⋆ y)         ≡⟨ ap inc^ab (sym associative) ⟩ 
+        inc^ab (a ⋆ x ⋆ y ⋆ z)           ≡⟨ ap inc^ab associative ⟩
+        inc^ab ((a ⋆ x) ⋆ y ⋆ z) {- 1 -} ≡⟨ ab-comm _ _ _ ⟩
+        inc^ab ((a ⋆ x) ⋆ z ⋆ y)         ≡⟨ ap inc^ab (sym associative) ⟩
         inc^ab (a ⋆ x ⋆ z ⋆ y)           ∎
 ```
 
@@ -91,7 +92,7 @@ tedious but straightforward algebra to define the second coequaliser
 condition:
 
 ```agda
-      l2 : ∀ a ((x , y , z) : G × G × G) 
+      l2 : ∀ a ((x , y , z) : G × G × G)
          → inc^ab ((x ⋆ y ⋆ z) ⋆ a) ≡ inc^ab ((x ⋆ z ⋆ y) ⋆ a)
       l2 a (x , y , z) =
         inc^ab ((x ⋆ y ⋆ z) ⋆ a) ≡⟨ ap inc^ab (sym associative) ⟩
@@ -108,13 +109,13 @@ bit tedious, but it follows from `ab-comm`: $xy = 1xy = 1yx = yx$.
 
 ```agda
   ab*-comm : ∀ x y → x ab* y ≡ y ab* x
-  ab*-comm = Coeq-elimProp₂ (λ _ _ → squash _ _) l1
+  ab*-comm = Coeq-elim-prop₂ (λ _ _ → squash _ _) l1
     where abstract
       l1 : ∀ x y → inc^ab (x ⋆ y) ≡ inc^ab (y ⋆ x)
       l1 x y =
-        inc^ab (x ⋆ y)        ≡⟨ ap inc^ab (ap₂ _⋆_ (sym G.idˡ) refl ∙ sym G.associative) ⟩ 
-        inc^ab (unit ⋆ x ⋆ y) ≡⟨ ab-comm _ _ _ ⟩ 
-        inc^ab (unit ⋆ y ⋆ x) ≡⟨ ap inc^ab (G.associative ∙ ap₂ _⋆_ G.idˡ refl) ⟩ 
+        inc^ab (x ⋆ y)        ≡⟨ ap inc^ab (ap₂ _⋆_ (sym G.idl) refl ∙ sym G.associative) ⟩
+        inc^ab (unit ⋆ x ⋆ y) ≡⟨ ab-comm _ _ _ ⟩
+        inc^ab (unit ⋆ y ⋆ x) ≡⟨ ap inc^ab (G.associative ∙ ap₂ _⋆_ G.idl refl) ⟩
         inc^ab (y ⋆ x)        ∎
 ```
 
@@ -129,13 +130,12 @@ tedious algebra:
   abinv : G^ab → G^ab
   abinv = Coeq-rec squash (λ x → inc^ab (x ⁻¹)) l1
     where abstract
-      -- TODO: Explain the trick here
-      l1 : ((x , y , z) : G × G × G) 
+      l1 : ((x , y , z) : G × G × G)
          → inc^ab ((x ⋆ y ⋆ z) ⁻¹) ≡ inc^ab ((x ⋆ z ⋆ y) ⁻¹)
       l1 (x , y , z) =
-        inc^ab ((x ⋆ y ⋆ z) ⁻¹)                             ≡⟨ ap inc^ab G.inv-comm ⟩ 
-        inc^ab ((y ⋆ z) ⁻¹ ⋆ x ⁻¹)                          ≡⟨ ap inc^ab (ap₂ _⋆_ G.inv-comm refl) ⟩ 
-        inc^ab ((z ⁻¹ ⋆ y ⁻¹) ⋆ x ⁻¹)                       ≡⟨⟩ 
+        inc^ab ((x ⋆ y ⋆ z) ⁻¹)                             ≡⟨ ap inc^ab G.inv-comm ⟩
+        inc^ab ((y ⋆ z) ⁻¹ — x)                             ≡⟨ ap inc^ab (ap₂ _⋆_ G.inv-comm refl) ⟩
+        inc^ab ((z ⁻¹ — y) — x)                             ≡⟨⟩
 ```
 
 We get to something that is definitionally equal to our `_ab*_`{.Agda}
@@ -143,7 +143,7 @@ multiplication, which _we know is commutative_, so we can swap $y^{-1}$
 and $z^{-1}$ around!
 
 ```agda
-        (inc^ab (z ⁻¹) ab* inc^ab (y ⁻¹)) ab* inc^ab (x ⁻¹) ≡⟨ ap₂ _ab*_ (ab*-comm (inc^ab (z ⁻¹)) (inc^ab (y ⁻¹))) (λ i → inc^ab (x ⁻¹)) ⟩ 
+        (inc^ab (z ⁻¹) ab* inc^ab (y ⁻¹)) ab* inc^ab (x ⁻¹) ≡⟨ ap₂ _ab*_ (ab*-comm (inc^ab (z ⁻¹)) (inc^ab (y ⁻¹))) (λ i → inc^ab (x ⁻¹)) ⟩
         (inc^ab (y ⁻¹) ab* inc^ab (z ⁻¹)) ab* inc^ab (x ⁻¹) ≡⟨⟩
 ```
 
@@ -151,8 +151,8 @@ That's a neat trick, isn't it. We still need some Tedious Algebra to
 finish the proof:
 
 ```agda
-        inc^ab ((y ⁻¹ ⋆ z ⁻¹) ⋆ x ⁻¹)                       ≡⟨ ap inc^ab (ap₂ _⋆_ (sym G.inv-comm) refl ) ⟩
-        inc^ab ((z ⋆ y) ⁻¹ ⋆ x ⁻¹)                          ≡⟨ ap inc^ab (sym G.inv-comm) ⟩ 
+        inc^ab ((y ⁻¹ — z) — x)                             ≡⟨ ap inc^ab (ap₂ _⋆_ (sym G.inv-comm) refl ) ⟩
+        inc^ab ((z ⋆ y) ⁻¹ — x)                             ≡⟨ ap inc^ab (sym G.inv-comm) ⟩
         inc^ab ((x ⋆ z ⋆ y) ⁻¹)                             ∎
 ```
 
@@ -162,79 +162,105 @@ inherited from $G$!
 
 ```agda
   ab*-associative : ∀ x y z → (x ab* y) ab* z ≡ x ab* (y ab* z)
-  ab*-associative = Coeq-elimProp₃ (λ _ _ _ → squash _ _) 
+  ab*-associative = Coeq-elim-prop₃ (λ _ _ _ → squash _ _)
     λ _ _ _ → ap inc^ab (sym associative)
 
-  GroupOn-G^ab : GroupOn G^ab
-  GroupOn-G^ab = makeGroup squash abunit _ab*_ abinv ab*-associative 
-    (Coeq-elimProp (λ _ → squash _ _) (λ _ → ap inc^ab G.inverseˡ)) 
-    (Coeq-elimProp (λ _ → squash _ _) (λ _ → ap inc^ab G.inverseʳ)) 
-    (Coeq-elimProp (λ _ → squash _ _) (λ _ → ap inc^ab G.idˡ)) 
+  Group-on-G^ab : Group-on G^ab
+  Group-on-G^ab = make-group squash abunit _ab*_ abinv ab*-associative
+    (Coeq-elim-prop (λ _ → squash _ _) (λ _ → ap inc^ab G.inversel))
+    (Coeq-elim-prop (λ _ → squash _ _) (λ _ → ap inc^ab G.inverser))
+    (Coeq-elim-prop (λ _ → squash _ _) (λ _ → ap inc^ab G.idl))
 
-  makeAbelian : Group ℓ
-  makeAbelian = _ , GroupOn-G^ab
+  Abelianise : Group ℓ
+  Abelianise = _ , Group-on-G^ab
 
-  isAbelian-makeAbelian : isAbelian makeAbelian
-  isAbelian-makeAbelian = ab*-comm
+  Abelianise-is-abelian-group : is-abelian-group Abelianise
+  Abelianise-is-abelian-group = ab*-comm
 ```
 
 ## Universal property
 
 This finishes the construction of _an_ abelian group from a group. To
 show that this construction is correct, we'll show that it satisfies a
-universal property: `makeAbelian`{.Agda} is left adjoint to the
-inclusion from abelian groups to groups. In essence, this means that any
-map from $G$ to an abelian group $G'$ factors in a unique way through
-the canonical map $G \to G^{ab}$.
+universal property: The map `inc^ab`{.Agda}, which we write as being
+from $G \to G^{ab}$, is a group homomorphism, and furthermore, it
+provides a _universal_ way of mapping from $G$ to an abelian group, in
+that if $H$ is an abelian group, then a map $f : G \to H$ factors
+through `inc^ab`{.Agda} in a unique way.
 
 ```agda
-  makeAbelian⊣Forget 
-    : (G' : Group ℓ) → isAbelian G'
-    → Group[ Grp ⇒ G' ] ≃ Group[ makeAbelian ⇒ G' ]
-  makeAbelian⊣Forget G' G'-ab = Iso→Equiv isom where
-    module G' = GroupOn (G' .snd)
-    open isGroupHom
-    open isIso
+Abelianise-universal
+  : ∀ {G : Group ℓ} → Universal-morphism G Ab→Grp
+Abelianise-universal {ℓ = ℓ} {G = G} = m where
+  open Cat (const! {A = Groups ℓ} G ↓ Ab→Grp)
+  open Initial
+  module G = Group-on (G .snd)
 ```
 
-We'll factor a given group homomorphism $G \to G'$ through $G^{ab}$
-using the `fold`{.agda} function below. To map out of the
-abelianisation, we must show that $f(xyz) = f(xzy)$. But $f$ is a
-homomorphism into an abelian group! So we have $f(xyz) = f(x)f(y)f(z) =
-f(x)f(z)f(y) = f(xzy)$.
+Our choice of initial object was already stated in the paragraph above
+--- it's the epimorphism $q : G \to G^{ab}$, i.e., the map which we
+call `inc^ab`{.Agda}.
 
 ```agda
-    fold : (f : G → G' .fst) → isGroupHom Grp G' f → G^ab → G' .fst
-    fold f gh = Coeq-rec G'.hasIsSet f l1 
-      where abstract
-        l1 : ((x , y , z) : G × G × G) → f (x ⋆ y ⋆ z) ≡ f (x ⋆ z ⋆ y)
-        l1 (x , y , z) = 
-          f (x ⋆ y ⋆ z)         ≡⟨ gh .pres-⋆ _ _ ⟩ 
-          f x G'.⋆ f (y ⋆ z)    ≡⟨ ap₂ G'._⋆_ refl (gh .pres-⋆ _ _ ) ⟩ 
-          f x G'.⋆ f y G'.⋆ f z ≡⟨ ap₂ G'._⋆_ refl (G'-ab _ _) ⟩ 
-          f x G'.⋆ f z G'.⋆ f y ≡⟨ ap₂ G'._⋆_ refl (sym (gh .pres-⋆ _ _ )) ⟩ 
-          f x G'.⋆ f (z ⋆ y)    ≡⟨ sym (gh .pres-⋆ _ _) ⟩ 
-          f (x ⋆ z ⋆ y)         ∎
+  init : Ob
+  init .↓Obj.x = tt
+  init .↓Obj.y = Abelianise G , Abelianise-is-abelian-group G
+  init .↓Obj.map .fst = inc^ab G
+  init .↓Obj.map .snd .Group-hom.pres-⋆ x y = refl
+
+  m : Initial
+  m .bot = init
+  m .has⊥ other = contr factor unique where
 ```
 
-Now it suffices to show that `fold`{.Agda} has an inverse --- I can tell
-you it has one: precomposition with the universal map $G_0 \to
-G^{ab}_0$, which is a group homomorphism on the nose.
+<!--
+```agda
+    module other = ↓Obj other
+    module H = AbGrp other.y
+    open Σ other.map renaming (fst to f ; snd to gh)
+    open Group-hom gh
+```
+-->
+
+Now suppose we have an abelian group $H$ and a map $f : G \to H$. We
+factor it through $G^{ab}$ as follows: Since $f$ is a homomorphism into
+an abelian group, it "respects commutativity", by which I mean that
+$f(ab) = f(a)f(b) = f(b)f(a) = f(ba)$, meaning in particular that it
+satisfies the requirements for mapping out of `Abelianise`{.Agda} at the
+level of sets.
 
 ```agda
-    isom : Iso _ _
-    isom .fst (f , g) = fold f g , r
+    factor : Hom _ other
+    factor .↓Hom.α = tt
+    factor .↓Hom.β .fst = Coeq-elim (λ _ → H.has-is-set) f (λ (a , b , c) → resp a b c)
       where abstract
-        r : isGroupHom makeAbelian G' (fold f g)
-        r .pres-⋆ = Coeq-elimProp₂ (λ _ _ → G'.hasIsSet _ _) (g .pres-⋆)
+      resp : ∀ a b c → f (a G.⋆ (b G.⋆ c)) ≡ f (a G.⋆ (c G.⋆ b))
+      resp a b c =
+        f (a G.⋆ (b G.⋆ c))   ≡⟨ pres-⋆ _ _ ⟩
+        f a H.⋆ f (b G.⋆ c)   ≡⟨ ap (f a H.⋆_) (pres-⋆ _ _) ⟩
+        f a H.⋆ (f b H.⋆ f c) ≡⟨ ap (f a H.⋆_) H.commutative ⟩
+        f a H.⋆ (f c H.⋆ f b) ≡˘⟨ ap (f a H.⋆_) (pres-⋆ _ _) ⟩
+        f a H.⋆ f (c G.⋆ b)   ≡˘⟨ pres-⋆ _ _ ⟩
+        f (a G.⋆ (c G.⋆ b))   ∎
+```
 
-    isom .snd .inv (f , g) = (f ∘ inc^ab) , r
-      where abstract
-        r : isGroupHom (G , gst) G' (f ∘ inc^ab)
-        r .pres-⋆ x y = g .pres-⋆ _ _
+To show that the map $h : G^{ab} \to H$ induced by $f$ is a group
+homomorphism, it suffices to assume that we have two honest-to-god
+elements $x, y : G$, and since $h$ is exactly $f$ on generators, the
+required identification $f(xy) = f(x)f(y)$ follows from $f$ being a
+group homomorphism.
 
-    isom .snd .rinv f = 
-      Σ≡Prop (λ _ → isProp-isGroupHom) 
-        (funext (Coeq-elimProp (λ _ → G'.hasIsSet _ _) λ _ → refl))
-    isom .snd .linv f = Σ≡Prop (λ _ → isProp-isGroupHom) refl
+```agda
+    factor .↓Hom.β .snd .Group-hom.pres-⋆ =
+      Coeq-elim-prop₂ (λ _ _ → H.has-is-set _ _) λ x y → pres-⋆ _ _
+    factor .↓Hom.sq = Forget-is-faithful refl
+```
+
+Now if $h'$ is any other map which factors $G \xepi{q} G^{ab} \xto{h'}
+H$, since $G \to G^{ab}$ is an epimorphism, we must have $h = h'$.
+
+```agda
+    unique : ∀ h → factor ≡ h
+    unique x = ↓Hom-path _ _ refl $ Forget-is-faithful $ funext $
+      Coeq-elim-prop (λ _ → H.has-is-set _ _) λ y i → x .↓Hom.sq i .fst y
 ```

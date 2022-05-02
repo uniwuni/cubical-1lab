@@ -90,11 +90,11 @@ suspiciously like the identity function:
 
 ```agda
 private
-  toPath : ∀ {ℓ} {A : Type ℓ} → (f : I → A) → Path A (f i0) (f i1)
-  toPath f i = f i
+  to-path : ∀ {ℓ} {A : Type ℓ} → (f : I → A) → Path A (f i0) (f i1)
+  to-path f i = f i
 
 refl : ∀ {ℓ} {A : Type ℓ} {x : A} → x ≡ x
-refl {x = x} = toPath (λ i → x)
+refl {x = x} = to-path (λ i → x)
 ```
 
 The type `Path A x y` is also written `x ≡ y`, when `A` is not important
@@ -133,11 +133,10 @@ internally as a `Path`{.Agda} because `I`{.Agda} is not in
 “fibrant universe” `Type`{.Agda}. Instead it lives in `SSet`, or, in
 Agda 2.6.3, its own universe -- `IUniv`.
 
-- $x \land \mathrm{i0} = \mathrm{i0}$, $x \land \mathrm{i1} = x$
-- $x \lor \mathrm{i0} = x$, $x \lor \mathrm{i1} = \mathrm{i1}$
+- $x \land \id{i0} = \id{i0}$, $x \land \id{i1} = x$
+- $x \lor \id{i0} = x$, $x \lor \id{i1} = \id{i1}$
 - $\neg(x \land y) = \neg x \lor \neg y$
-- $\neg\mathrm{i0} = \mathrm{i1}$, $\neg\mathrm{i1} = \mathrm{i0}$,
-$\neg\neg x = x$
+- $\neg\id{i0} = \id{i1}$, $\neg\id{i1} = \id{i0}$, $\neg\neg x = x$
 - $\land$ and $\lor$ are both associative, commutative and idempotent,
 and distribute over eachother.
 
@@ -208,8 +207,8 @@ faces.
   a && b
   \arrow["p", from=1-1, to=1-3]
   \arrow["p"', from=3-1, to=3-3]
-  \arrow["{\mathrm{refl}}"{description}, from=1-1, to=3-1]
-  \arrow["{\mathrm{refl}}"{description}, from=1-3, to=3-3]
+  \arrow["{\id{refl}}"{description}, from=1-1, to=3-1]
+  \arrow["{\id{refl}}"{description}, from=1-3, to=3-3]
 \end{tikzcd}\]
 ~~~
 
@@ -218,8 +217,8 @@ faces.
   a && a \\
   \\
   b && b
-  \arrow["{\mathrm{refl}}", from=1-1, to=1-3]
-  \arrow["{\mathrm{refl}}"', from=3-1, to=3-3]
+  \arrow["{\id{refl}}", from=1-1, to=1-3]
+  \arrow["{\id{refl}}"', from=3-1, to=3-3]
   \arrow["p"{description}, from=1-1, to=3-1]
   \arrow["p"{description}, from=1-3, to=3-3]
 \end{tikzcd}\]
@@ -248,9 +247,9 @@ These correspond to the following two squares:
   a && a \\
   \\
   a && b
-  \arrow["{\mathrm{refl}}", from=1-1, to=1-3]
+  \arrow["{\id{refl}}", from=1-1, to=1-3]
   \arrow["p"', from=3-1, to=3-3]
-  \arrow["{\mathrm{refl}}"{description}, from=1-1, to=3-1]
+  \arrow["{\id{refl}}"{description}, from=1-1, to=3-1]
   \arrow["{p}"{description}, from=1-3, to=3-3]
 \end{tikzcd}\]
 ~~~
@@ -261,9 +260,9 @@ These correspond to the following two squares:
   \\
   b && b
   \arrow["{p}", from=1-1, to=1-3]
-  \arrow["{\mathrm{refl}}"', from=3-1, to=3-3]
+  \arrow["{\id{refl}}"', from=3-1, to=3-3]
   \arrow["p"{description}, from=1-1, to=3-1]
-  \arrow["{\mathrm{refl}}"{description}, from=1-3, to=3-3]
+  \arrow["{\id{refl}}"{description}, from=1-3, to=3-3]
 \end{tikzcd}\]
 ~~~
 
@@ -271,7 +270,7 @@ These correspond to the following two squares:
 
 Since iterated paths are used _a lot_ in homotopy type theory, we
 introduce a shorthand for 2D non-dependent paths. A `Square`{.Agda} in a
-type is exactly what it says on the tin: a square. 
+type is exactly what it says on the tin: a square.
 
 ```
 Square : ∀ {ℓ} {A : Type ℓ} {a00 a01 a10 a11 : A}
@@ -368,7 +367,7 @@ exactly two inhabitants ([see here]), which is something like saying
 nonsensical, which is why "there are two paths Bool → Bool" is
 preferred: it's not nonsense.
 
-[see here]: Data.Bool.html#AutBool≡2
+[see here]: Data.Bool.html#Bool-aut≡2
 
 In Cubical Agda, `transport`{.Agda} is a derived notion, with the actual
 primitive being `transp`{.Agda}. Unlike `transport`{.Agda}, which has
@@ -423,23 +422,23 @@ very convenient when working with iterated transports.
 </summary>
 
 ```agda
-transport-fillerExt : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B)
-                    → PathP (λ i → A → p i) (λ x → x) (transport p)
-transport-fillerExt p i x = transport-filler p x i
+transport-filler-ext : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B)
+                     → PathP (λ i → A → p i) (λ x → x) (transport p)
+transport-filler-ext p i x = transport-filler p x i
 
-transport⁻-fillerExt : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B)
+transport⁻-filler-ext : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B)
                      → PathP (λ i → p i → A) (λ x → x) (transport (sym p))
-transport⁻-fillerExt p i x = transp (λ j → p (i ∧ ~ j)) (~ i) x
+transport⁻-filler-ext p i x = transp (λ j → p (i ∧ ~ j)) (~ i) x
 
-transport⁻Transport : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B) (a : A)
+transport⁻transport : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B) (a : A)
                     → transport (sym p) (transport p a) ≡ a
-transport⁻Transport p a i = 
-  transport⁻-fillerExt p (~ i) (transport-fillerExt p (~ i) a)
+transport⁻transport p a i =
+  transport⁻-filler-ext p (~ i) (transport-filler-ext p (~ i) a)
 ```
 </details>
 
-The path is constant when `i = i1` because `(λ j → p (i1 ∧ j))` is
-`(λ j → p i1)` (by the reduction rules for `_∧_`{.Agda}). It has the
+The path is constant when `i = i0` because `(λ j → p (i0 ∧ j))` is
+`(λ j → p i0)` (by the reduction rules for `_∧_`{.Agda}). It has the
 stated endpoints, again, because `transp P i1` is the identity function.
 
 By altering a path `p` using a predicate `P`, we get the promised
@@ -507,7 +506,8 @@ i → Type ℓ`. Let's characterise `transport`{.Agda} in the lines `(λ i →
 (x : A i) → B i x)`. A first attempt would be to repeat the
 non-dependent construction: Given an `f : (x : A i0) → B i0 x` and an
 argument `x : A i1`, we first get `x' : A i0` by transporting along `λ i
-→ A (~ i)`, compute `f x' : B i0 x`, then transport along `(λ i → B i x')` to g- Wait.
+→ A (~ i)`, compute `f x' : B i0 x`, then transport along `(λ i → B i
+x')` to g- Wait.
 
 ```agda
   _ : {f : (x : A i0) → B i0 x}
@@ -562,15 +562,15 @@ say that `singletons`{.Agda ident=singleton} are contractible is to say
 that every other inhabitant has a path to `(x, refl)`:
 
 ```agda
-isContr-Singleton : ∀ {ℓ} {A : Type ℓ} {x : A} (y : Singleton x)
-                  → Path (Singleton x) (x , refl) y
-isContr-Singleton {x = x} (y , path) i = path i , square i where
+Singleton-is-contr : ∀ {ℓ} {A : Type ℓ} {x : A} (y : Singleton x)
+                   → Path (Singleton x) (x , refl) y
+Singleton-is-contr {x = x} (y , path) i = path i , square i where
   square : Square refl refl path path
   square i j = path (i ∧ j)
 ```
 
 Thus, the definition of `J`{.Agda}: `transport`{.Agda} +
-`isContr-Singleton`{.Agda}.
+`Singleton-is-contr`{.Agda}.
 
 ```agda
 J : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {x : A}
@@ -580,7 +580,7 @@ J : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {x : A}
   → P y p
 J {x = x} P prefl {y} p = transport (λ i → P (path i .fst) (path i .snd)) prefl where
   path : (x , refl) ≡ (y , p)
-  path = isContr-Singleton (y , p)
+  path = Singleton-is-contr (y , p)
 ```
 
 This eliminator _doesn't_ definitionally compute to `prefl` when `p` is
@@ -589,11 +589,11 @@ identity.  However, since it _is_ a transport, we can use the
 `transport-filler`{.Agda} to get a path expressing the computation rule.
 
 ```agda
-JRefl : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {x : A}
-        (P : (y : A) → x ≡ y → Type ℓ₂)
-      → (pxr : P x refl)
-      → J P pxr refl ≡ pxr
-JRefl {x = x} P prefl i = transport-filler (λ i → P _ (λ j → x)) prefl (~ i)
+J-refl : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁} {x : A}
+           (P : (y : A) → x ≡ y → Type ℓ₂)
+       → (pxr : P x refl)
+       → J P pxr refl ≡ pxr
+J-refl {x = x} P prefl i = transport-filler (λ i → P _ (λ j → x)) prefl (~ i)
 ```
 
 <!--
@@ -652,7 +652,7 @@ module _ {A B C : Type} {f : A → B} {g : B → C} where
           → sym (ap f p) ≡ ap f (sym p)
   ap-sym = refl
 
-  ap-refl : {x : A} → ap f (λ i → x) ≡ (λ i → f x) 
+  ap-refl : {x : A} → ap f (λ i → x) ≡ (λ i → f x)
   ap-refl = refl
 ```
 
@@ -666,7 +666,7 @@ it's in [a different module].
 
 In "Book HoTT", the primitive operation from which the
 higher-dimensional structure of types is derived is the `J`{.Agda}
-eliminator, with `JRefl`{.Agda} as a _definitional_ computation rule.
+eliminator, with `J-refl`{.Agda} as a _definitional_ computation rule.
 This has the benefit of being very elegant: This one elimination rule
 generates an infinite amount of coherent data. However, it's very hard
 to make compute in the presence of higher inductive types and
@@ -701,7 +701,7 @@ their common endpoints:
   x && y \\
   \\
   w && z
-  \arrow["{\mathrm{sym}\ p}"', from=1-1, to=3-1]
+  \arrow["{\id{sym}\ p}"', from=1-1, to=3-1]
   \arrow["q", from=1-1, to=1-3]
   \arrow["r", from=1-3, to=3-3]
 \end{tikzcd}\]
@@ -726,7 +726,7 @@ is by using the `Partial`{.Agda} type former.
 
 The `Partial`{.Agda} type former takes two arguments: A _formula_
 $\varphi$, and a _type_ $A$. The idea is that a term of type
-$\mathrm{Partial}\ \varphi\ A$ in a context with $n$ `I`{.Agda}-typed
+$\id{Partial}\ \varphi\ A$ in a context with $n$ `I`{.Agda}-typed
 variables is a $n$-cube that is only defined when $\varphi$ "is true". In
 Agda, formulas are represented using the De Morgan structure of the
 interval, and they are "true" when they are equal to 1. The predicate
@@ -742,9 +742,9 @@ not $1$ --- like 0.5.
 
 ```agda
 private
-  notAPath : (i : I) → Partial (~ i ∨ i) Bool
-  notAPath i (i = i0) = true
-  notAPath i (i = i1) = false
+  not-a-path : (i : I) → Partial (~ i ∨ i) Bool
+  not-a-path i (i = i0) = true
+  not-a-path i (i = i1) = false
 ```
 
 This represents the following shape: Two disconnected points, with
@@ -752,7 +752,7 @@ completely unrelated values at each endpoint of the interval.
 
 ~~~{.quiver .short-2}
 \[\begin{tikzcd}
-  {\mathrm{true}} && {\mathrm{false}}
+  {\id{true}} && {\id{false}}
 \end{tikzcd}\]
 ~~~
 
@@ -763,7 +763,7 @@ a `Partial`{.Agda} to an argument of type `IsOne`{.Agda} to get a value
 of the underlying type.
 
 ```agda
-  _ : notAPath i0 1=1 ≡ true
+  _ : not-a-path i0 1=1 ≡ true
   _ = refl
 ```
 
@@ -785,8 +785,8 @@ to a honest-to-god _element_ of $A$, which agrees with $e$ where it is
 defined?
 
 Specifically, when this is the case, we say that $x : A$ _extends_ $e :
-\mathrm{Partial}\ \varphi\ A$. We could represent this very generically as
-a _lifting problem_, i.e. trying to find a map $\square^n$ which agrees
+\id{Partial}\ \varphi\ A$. We could represent this very generically as a
+_lifting problem_, i.e. trying to find a map $\square^n$ which agrees
 with $e$ when restricted to $\varphi$, but I believe a specific example
 will be more helpful.
 
@@ -800,8 +800,8 @@ the interval (in fact, it is `true`{.Agda} everywhere), so we say that
 
 ~~~{.quiver .short-1}
 \[\begin{tikzcd}
-  \textcolor{rgb,255:red,214;green,92;blue,92}{\mathrm{true}} && {\mathrm{true}}
-  \arrow["{\mathrm{refl}}", from=1-1, to=1-3]
+  \textcolor{rgb,255:red,214;green,92;blue,92}{\id{true}} && {\id{true}}
+  \arrow["{\id{refl}}", from=1-1, to=1-3]
 \end{tikzcd}\]
 ~~~
 
@@ -869,8 +869,8 @@ a contradiction.[^truenotfalse]
 _this_ module, see [Data.Bool](Data.Bool.html) for that construction.
 
 ```agda
-  notExtensible : ((i : I) → Bool [ (~ i ∨ i) ↦ notAPath i ]) → true ≡ false
-  notExtensible ext i = outS (ext i)
+  not-extensible : ((i : I) → Bool [ (~ i ∨ i) ↦ not-a-path i ]) → true ≡ false
+  not-extensible ext i = outS (ext i)
 ```
 
 This counterexample demonstrates the eliminator for `_[_↦_]`{.Agda},
@@ -906,7 +906,7 @@ left-right direction) path going in the top-down direction.
   x && y \\
   \\
   w && z
-  \arrow["{\mathrm{sym}\ p\ j}", from=1-1, to=3-1]
+  \arrow["{\id{sym}\ p\ j}", from=1-1, to=3-1]
   \arrow["q\ i", from=1-1, to=1-3]
   \arrow["r\ j"', from=1-3, to=3-3]
 \end{tikzcd}\]
@@ -922,7 +922,7 @@ The complete “open box”.
   x && y \\
   \\
   w && z
-  \arrow["{\mathrm{sym}\ p\ j}", from=1-1, to=3-1]
+  \arrow["{\id{sym}\ p\ j}", from=1-1, to=3-1]
   \arrow["r\ j"', from=1-3, to=3-3]
 \end{tikzcd}\]
 ~~~
@@ -952,10 +952,10 @@ module _ {A : Type} {w x y z : A} {p : w ≡ x} {q : x ≡ y} {r : y ≡ z} wher
 ```
 
 When given `i0`{.Agda} as `j`, `double-comp-tube`{.Agda} has boundary
-$p\ \mathrm{i1} \to r\ \mathrm{i0}$, which computes to $x \to y$. This
-means that for this path to be extensible at `i0`{.Agda}, we need a path
-with that boundary. By assumption, `q` extends `double-comp-tube`{.Agda}
-at `i0`{.Agda}.
+$p\ \id{i1} \to r\ \id{i0}$, which computes to $x \to y$. This means
+that for this path to be extensible at `i0`{.Agda}, we need a path with
+that boundary. By assumption, `q` extends `double-comp-tube`{.Agda} at
+`i0`{.Agda}.
 
 ```agda
   extensible-at-i0 : (i : I) → A [ (i ∨ ~ i) ↦ double-comp-tube i i0 ]
@@ -972,7 +972,7 @@ totally-defined cube.
   \textcolor{rgb,255:red,214;green,92;blue,92}{x} && \textcolor{rgb,255:red,214;green,92;blue,92}{y} \\
   \\
   \textcolor{rgb,255:red,214;green,92;blue,92}{w} && \textcolor{rgb,255:red,214;green,92;blue,92}{z}
-  \arrow["{\mathrm{sym}\ p\ j}"', color={rgb,255:red,214;green,92;blue,92}, from=1-1, to=3-1]
+  \arrow["{\id{sym}\ p\ j}"', color={rgb,255:red,214;green,92;blue,92}, from=1-1, to=3-1]
   \arrow["{r\ j}", color={rgb,255:red,214;green,92;blue,92}, from=1-3, to=3-3]
   \arrow["{q\ i}", from=1-1, to=1-3]
 \end{tikzcd}\]
@@ -1053,11 +1053,11 @@ private
                → A i1 [ φ ↦ u i1 ]
   comp-verbose A u u0 = inS (comp A u (outS u0))
 
-fill : ∀ {ℓ} (A : ∀ i → Type ℓ)
+fill : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i))
        {φ : I}
      → (u : ∀ i → Partial φ (A i))
      → (u0 : A i0 [ φ ↦ u i0 ])
-     → PathP A (outS u0) (comp A u (outS u0))
+     → ∀ i → A i
 fill A {φ = φ} u u0 i =
   comp (λ j → A (i ∧ j))
        (λ j → λ { (φ = i1) → u (i ∧ j) 1=1
@@ -1109,7 +1109,7 @@ be reflexivity. For definiteness, we chose the left face:
   \\
   x && z
   \arrow["{p}", from=1-1, to=1-3]
-  \arrow["{\mathrm{refl}}"', from=1-1, to=3-1]
+  \arrow["{\id{refl}}"', from=1-1, to=3-1]
   \arrow["{q}", from=1-3, to=3-3]
   \arrow["{p \bullet q}"', from=3-1, to=3-3, dashed]
 \end{tikzcd}\]
@@ -1184,7 +1184,7 @@ Note that the proof of this involves filling a cube in a context that
                      ; (k = i1) → r l
                      })
             (inS (q k)) j
-    
+
     square : α ≡ β
     square i j = cube i i1 j
 ```
@@ -1215,7 +1215,7 @@ denote it by `hcomp...` in the diagram.
   \arrow["{\beta\ k}", from=5-5, to=4-4]
   \arrow["{\alpha\text{-filler}\ j\ k}"{description}, shorten >=6pt, Rightarrow, from=5, to=3]
   \arrow["{\beta\text{-filler}\ j\ k}"{description}, Rightarrow, draw=none, from=4, to=1]
-  \arrow[""{name=8, anchor=center, inner sep=0}, "{\mathrm{hcomp}\dots}"{description}, Rightarrow, draw=none, from=6, to=0]
+  \arrow[""{name=8, anchor=center, inner sep=0}, "{\id{hcomp}\dots}"{description}, Rightarrow, draw=none, from=6, to=0]
   \arrow["{r\ j}"{description}, color={rgb,255:red,214;green,92;blue,92}, Rightarrow, draw=none, from=0, to=2]
   \arrow["{q\ k}"{description}, Rightarrow, draw=none, from=2, to=7]
   \arrow["{p\ \neg j}"{description}, shift left=2, color={rgb,255:red,153;green,92;blue,214}, Rightarrow, draw=none, from=8, to=7]
@@ -1225,7 +1225,7 @@ denote it by `hcomp...` in the diagram.
 This diagram is quite busy because it is a 3D commutative diagram, but
 it could be busier: all of the unimportant edges were not annotated. By
 the way, the lavender face (including the lavender $p\ \neg j$) is the
-$k = \mathrm{i0}$ face, and the red face is the $k = \mathrm{i1}$ face.
+$k = \id{i0}$ face, and the red face is the $k = \id{i1}$ face.
 
 However, even though the diagram is very busy, most of the detail it
 contains can be ignored. Reading it in the left-right direction, it
@@ -1243,7 +1243,7 @@ Explicitly, here is that bottom square:
   \arrow["\beta"', from=3-3, to=1-3]
   \arrow[""{name=0, anchor=center, inner sep=0}, "w", color={rgb,255:red,153;green,92;blue,214}, from=3-1, to=3-3]
   \arrow[""{name=1, anchor=center, inner sep=0}, "z"', color={rgb,255:red,214;green,92;blue,92}, from=1-1, to=1-3]
-  \arrow["{\mathrm{hcomp}\dots}"{description}, Rightarrow, draw=none, from=0, to=1]
+  \arrow["{\id{hcomp}\dots}"{description}, Rightarrow, draw=none, from=0, to=1]
 \end{tikzcd}\]
 ~~~
 
@@ -1374,9 +1374,9 @@ by the endpoint rule for `transport-filler`{.Agda}.
 The existence of paths over paths gives another "counterexample" to
 thinking of paths as _equality_. For instance, it's hard to imagine a
 world in which `true` and `false` can be equal in any interesting sense
-of the word _equal_ --- but over the identification $\mathrm{Bool}
-\equiv \mathrm{Bool}$ that switches the points around, `true` and
-`false` can be identified!
+of the word _equal_ --- but over the identification $\id{Bool} \equiv
+\id{Bool}$ that switches the points around, `true` and `false` can be
+identified!
 
 ## Coercion
 
@@ -1389,11 +1389,11 @@ variables, swapping variables, etc). This is a different cubical type
 theory, called _Cartesian cubical type theory_.
 
 In Cartesian cubical type theory, instead of having a `transp`{.Agda}
-operation which takes $A(\mathrm{i0}) \to A(\mathrm{i1})$, there is a
-“more powerful” _coercion_ operation, written $\mathrm{coe}^A_{i \to
-j}$, which takes $A(i) \to A(j)$, as in the subscript. However, despite
-the seeming added power, the coercion operation can be implemented in
-Cubical Agda: First, we introduce alternative names for several uses of
+operation which takes $A(\id{i0}) \to A(\id{i1})$, there is a “more
+powerful” _coercion_ operation, written $\id{coe}^A_{i \to j}$, which
+takes $A(i) \to A(j)$, as in the subscript. However, despite the seeming
+added power, the coercion operation can be implemented in Cubical Agda:
+First, we introduce alternative names for several uses of
 `transp`{.Agda}.
 
 ```agda
@@ -1411,10 +1411,10 @@ the endpoints to a path which can vary over the interval. These
 generalise the `transport-filler`{.Agda} operation.
 
 ```agda
-coe0→i : ∀ {ℓ} (A : I → Type ℓ) (i : I) → A i0 → A i
+coe0→i : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i)) (i : I) → A i0 → A i
 coe0→i A i a = transp (λ j → A (i ∧ j)) (~ i) a
 
-coe1→i : ∀ {ℓ} (A : I → Type ℓ) (i : I) → A i1 → A i
+coe1→i : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i)) (i : I) → A i1 → A i
 coe1→i A i a = transp (λ j → A (i ∨ ~ j)) i a
 ```
 
@@ -1425,7 +1425,7 @@ or 1, respectively) and "spread it" to a line varying over the variable
 over `i` to one of the endpoints:
 
 ```
-coei→0 : ∀ {ℓ} (A : I → Type ℓ) (i : I) → A i → A i0
+coei→0 : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i)) (i : I) → A i → A i0
 coei→0 A i a = transp (λ j → A (i ∧ ~ j)) (~ i) a
 ```
 
@@ -1436,19 +1436,19 @@ corners, and the dashed line is `coe A i i1`.
 
 ~~~{.quiver}
 \[\begin{tikzcd}
-  {a} && {\mathrm{coe}^A_{1\to0}(a)} \\
+  {a} && {\id{coe}^A_{1\to0}(a)} \\
   \\
-  {\mathrm{coe}^A_{0\to1}(a)} && {a}
-  \arrow["{\mathrm{coe}^A_{0\to j}(a)}"', from=1-1, to=3-1]
-  \arrow["{\mathrm{coe}^A_{1\to j}(a)}", from=1-3, to=3-3]
-  \arrow[""{name=0, anchor=center, inner sep=0}, "{\mathrm{coe}^A_{i\to0}(a)}", from=1-1, to=1-3]
-  \arrow[""{name=1, anchor=center, inner sep=0}, "{\mathrm{coe}^A_{i\to1}(a)}"', dashed, from=3-1, to=3-3]
-  \arrow["{\mathrm{coe}^A_{i\to j}(a)}"{description}, Rightarrow, draw=none, from=0, to=1]
+  {\id{coe}^A_{0\to1}(a)} && {a}
+  \arrow["{\id{coe}^A_{0\to j}(a)}"', from=1-1, to=3-1]
+  \arrow["{\id{coe}^A_{1\to j}(a)}", from=1-3, to=3-3]
+  \arrow[""{name=0, anchor=center, inner sep=0}, "{\id{coe}^A_{i\to0}(a)}", from=1-1, to=1-3]
+  \arrow[""{name=1, anchor=center, inner sep=0}, "{\id{coe}^A_{i\to1}(a)}"', dashed, from=3-1, to=3-3]
+  \arrow["{\id{coe}^A_{i\to j}(a)}"{description}, Rightarrow, draw=none, from=0, to=1]
 \end{tikzcd}\]
 ~~~
 
 ```agda
-coe : ∀ {ℓ} (A : I → Type ℓ) (i j : I) → A i → A j
+coe : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i)) (i j : I) → A i → A j
 coe A i j a =
   fill A (λ j → λ { (i = i0) → coe0→i A j a
                   ; (i = i1) → coe1→i A j a
@@ -1460,7 +1460,7 @@ As the square implies, when `j = i1`, we have the squeeze operation
 opposite to `coei→0`{.Agda}, which we call `coei→1`{.Agda}.
 
 ```
-coei→1 : ∀ {ℓ} (A : I → Type ℓ) (i : I) → A i → A i1
+coei→1 : ∀ {ℓ : I → Level} (A : ∀ i → Type (ℓ i)) (i : I) → A i → A i1
 coei→1 A i a = coe A i i1 a
 ```
 
@@ -1481,7 +1481,7 @@ private
 ```
 
 This operation satisfies, _definitionally_, a whole host of equations.
-For starters, we have that the $\mathrm{coe}^A_{i\to1}$ (resp $i \to 0$)
+For starters, we have that the $\id{coe}^A_{i\to1}$ (resp $i \to 0$)
 specialises to transport when $i = 0$ (resp. $i = 1$), and to the
 identity when $i = 1$ (resp. $i = 0$):
 
@@ -1536,18 +1536,18 @@ defined in terms of `transp`{.Agda} and `PathP≡Path`{.Agda}, but this
 definition is more efficient.
 
 ```agda
-toPathP : ∀ {ℓ} (A : I → Type ℓ) (x : A i0) (y : A i1)
-        → coe0→1 A x ≡ y
-        → PathP A x y
-toPathP A x y p i =
+to-pathp : ∀ {ℓ} {A : I → Type ℓ} {x : A i0} {y : A i1}
+         → coe0→1 A x ≡ y
+         → PathP A x y
+to-pathp {A = A} {x} p i =
   hcomp (λ j → λ { (i = i0) → x
                  ; (i = i1) → p j })
         (coe0→i A i x)
 
-fromPathP : ∀ {ℓ} {A : I → Type ℓ} {x : A i0} {y : A i1}
-          → PathP A x y
-          → coe0→1 A x ≡ y
-fromPathP {A = A} p i = coei→1 A i (p i)
+from-pathp : ∀ {ℓ} {A : I → Type ℓ} {x : A i0} {y : A i1}
+           → PathP A x y
+           → coe0→1 A x ≡ y
+from-pathp {A = A} p i = coei→1 A i (p i)
 ```
 
 These definitions illustrate how using the named squeezes and spreads
@@ -1575,12 +1575,12 @@ For `Σ`{.Agda} types, a path between `(a , b) ≡ (x , y)` consists of a
 path `p : a ≡ x`, and a path between `b` and `y` laying over `p`.
 
 ```agda
-Σ-PathP : ∀ {a b} {A : Type a} {B : A → Type b}
+Σ-pathp : ∀ {a b} {A : Type a} {B : A → Type b}
         → {x y : Σ B}
         → (p : x .fst ≡ y .fst)
         → PathP (λ i → B (p i)) (x .snd) (y .snd)
         → x ≡ y
-Σ-PathP p q i = p i , q i
+Σ-pathp p q i = p i , q i
 ```
 
 We can also use the book characterisation of dependent paths, which is
@@ -1588,13 +1588,12 @@ simpler in the case where the `Σ`{.Agda} represents a subset --- i.e.,
 `B` is a family of propositions.
 
 ```agda
-Σ-Path : ∀ {a b} {A : Type a} {B : A → Type b}
+Σ-path : ∀ {a b} {A : Type a} {B : A → Type b}
        → {x y : Σ B}
        → (p : x .fst ≡ y .fst)
        → subst B p (x .snd) ≡ (y .snd)
        → x ≡ y
-Σ-Path {A = A} {B} {x} {y} p q =
-  Σ-PathP p (toPathP _ _ _ q)
+Σ-path {A = A} {B} {x} {y} p q = Σ-pathp p (to-pathp q)
 ```
 
 ## Π types
@@ -1732,11 +1731,11 @@ _▷_ : ∀ {ℓ} {A : I → Type ℓ} {a₀ : A i0} {a₁ a₁' : A i1}
   hcomp (λ j → λ {(i = i0) → p i0; (i = i1) → q j}) (p i)
 
 Square≡·· : ∀ {ℓ} {A : Type ℓ}
-          → {w x y z : A} 
+          → {w x y z : A}
           → {p : x ≡ w} {q : x ≡ y} {s : w ≡ z} {r : y ≡ z}
           → Square p q s r ≡ (sym p ·· q ·· r ≡ s)
-Square≡·· {p = p} {q} {s} {r} k = 
-  PathP (λ i → p (i ∨ k) ≡ r (i ∨ k)) 
+Square≡·· {p = p} {q} {s} {r} k =
+  PathP (λ i → p (i ∨ k) ≡ r (i ∨ k))
     (··-filler (sym p) q r k) s
 
 ≡⟨⟩⟨⟩-syntax : ∀ {ℓ} {A : Type ℓ} (x y : A) {w z : A} → x ≡ y → y ≡ z → z ≡ w → x ≡ w
@@ -1750,5 +1749,36 @@ J′ : ∀ {ℓ₁ ℓ₂} {A : Type ℓ₁}
    → {x y : A} (p : x ≡ y)
    → P x y p
 J′ P prefl {x} p = transport (λ i → P x (p i) λ j → p (i ∧ j)) (prefl x)
+
+··≡twice∙
+  : ∀ {ℓ} {A : Type ℓ}
+  → {x y z w : A}
+  → (p : x ≡ y) (q : y ≡ z) (r : z ≡ w)
+  → p ·· q ·· r ≡ p ∙ q ∙ r
+··≡twice∙ p q r i j =
+  hcomp (λ k → λ { (i = i1) → ∙-filler' p (q ∙ r) k j
+                 ; (j = i0) → p (~ k)
+                 ; (j = i1) → r (i ∨ k)})
+        (∙-filler q r i j)
+
+invert-sides : ∀ {ℓ} {A : Type ℓ} {x y z : A} (p : x ≡ y) (q : x ≡ z)
+             → Square q p (sym q) (sym p)
+invert-sides {x = x} p q i j =
+  hcomp (λ k → λ { (i = i0) → p (k ∧ j)
+                 ; (i = i1) → q (~ j ∧ k)
+                 ; (j = i0) → q (i ∧ k)
+                 ; (j = i1) → p (~ i ∧ k)})
+        x
+
+sym-∙-filler : ∀ {ℓ} {A : Type ℓ} {x y z : A} (p : x ≡ y) (q : y ≡ z) → I → I → I → A
+sym-∙-filler {A = A} {z = z} p q i j k =
+  hfill (λ k → λ { (i = i0) → q (k ∨ j)
+                 ; (i = i1) → p (~ k ∧ j) })
+       (inS (invert-sides q (sym p) i j))
+       k
+
+sym-∙ : ∀ {ℓ} {A : Type ℓ} {x y z : A} (p : x ≡ y) (q : y ≡ z) → sym (p ∙ q) ≡ sym q ∙ sym p
+sym-∙ p q i j = sym-∙-filler p q j i i1
+
 ```
 -->

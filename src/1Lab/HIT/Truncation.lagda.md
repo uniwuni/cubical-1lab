@@ -17,12 +17,12 @@ propositional truncations can not be constructed without postulates,
 even in the presence of impredicative prop. However, Cubical Agda
 provides a tool to define them: _higher inductive types_.
 
-[proposition]: agda://1Lab.HLevel#isProp
+[proposition]: agda://1Lab.HLevel#is-prop
 
 ```agda
 data ∥_∥ {ℓ} (A : Type ℓ) : Type ℓ where
   inc    : A → ∥ A ∥
-  squash : isProp ∥ A ∥
+  squash : is-prop ∥ A ∥
 ```
 
 The two constructors that generate `∥_∥`{.Agda} state precisely that the
@@ -30,9 +30,17 @@ truncation is inhabited when `A` is (`inc`{.Agda}), and that it is a
 proposition (`squash`{.Agda}).
 
 ```agda
-isProp-∥-∥ : ∀ {ℓ} {A : Type ℓ} → isProp ∥ A ∥
-isProp-∥-∥ = squash
+is-prop-∥-∥ : ∀ {ℓ} {A : Type ℓ} → is-prop ∥ A ∥
+is-prop-∥-∥ = squash
 ```
+
+<!--
+```agda
+instance
+  H-Level-truncation : ∀ {n} {ℓ} {A : Type ℓ} → H-Level ∥ A ∥ (suc n)
+  H-Level-truncation = hlevel-instance (is-prop→is-hlevel-suc squash)
+```
+-->
 
 The eliminator for `∥_∥`{.Agda} says that you can eliminate onto $P$
 whenever it is a family of propositions, by providing a case for
@@ -41,32 +49,39 @@ whenever it is a family of propositions, by providing a case for
 ```agda
 ∥-∥-elim : ∀ {ℓ ℓ'} {A : Type ℓ}
              {P : ∥ A ∥ → Type ℓ'}
-         → ((x : _) → isProp (P x))
+         → ((x : _) → is-prop (P x))
          → ((x : A) → P (inc x))
          → (x : ∥ A ∥) → P x
 ∥-∥-elim pprop incc (inc x) = incc x
 ∥-∥-elim pprop incc (squash x y i) =
-  isProp→PathP (λ j → pprop (squash x y j)) (∥-∥-elim pprop incc x)
-                                            (∥-∥-elim pprop incc y)
-                                            i
+  is-prop→pathp (λ j → pprop (squash x y j)) (∥-∥-elim pprop incc x)
+                                             (∥-∥-elim pprop incc y)
+                                             i
 ```
 
 <!--
 ```agda
 ∥-∥-elim₂ : ∀ {ℓ ℓ₁ ℓ₂} {A : Type ℓ} {B : Type ℓ₁}
               {P : ∥ A ∥ → ∥ B ∥ → Type ℓ₂}
-          → (∀ x y → isProp (P x y))
+          → (∀ x y → is-prop (P x y))
           → (∀ x y → P (inc x) (inc y))
           → ∀ x y → P x y
 ∥-∥-elim₂ {A = A} {B} {P} pprop work x y = go x y where
   go : ∀ x y → P x y
   go (inc x) (inc x₁) = work x x₁
   go (inc x) (squash y y₁ i) =
-    isProp→PathP (λ i → pprop (inc x) (squash y y₁ i))
-                 (go (inc x) y) (go (inc x) y₁) i
+    is-prop→pathp (λ i → pprop (inc x) (squash y y₁ i))
+                  (go (inc x) y) (go (inc x) y₁) i
+
   go (squash x x₁ i) z =
-    isProp→PathP (λ i → pprop (squash x x₁ i) z)
+    is-prop→pathp (λ i → pprop (squash x x₁ i) z)
                   (go x z) (go x₁ z) i
+
+∥-∥-rec : ∀ {ℓ ℓ'} {A : Type ℓ} {P : Type ℓ'}
+         → is-prop P
+         → (A → P)
+         → (x : ∥ A ∥) → P
+∥-∥-rec pprop = ∥-∥-elim (λ _ → pprop)
 ```
 -->
 
@@ -76,7 +91,7 @@ would have. Specifically, let `B` be a proposition. We have:
 
 ```agda
 ∥-∥-univ : ∀ {ℓ} {A : Type ℓ} {B : Type ℓ}
-         → isProp B → (∥ A ∥ → B) ≃ (A → B)
+         → is-prop B → (∥ A ∥ → B) ≃ (A → B)
 ∥-∥-univ {A = A} {B = B} bprop = Iso→Equiv (inc' , iso rec (λ _ → refl) beta) where
   inc' : (x : ∥ A ∥ → B) → A → B
   inc' f x = f (inc x)
@@ -86,7 +101,7 @@ would have. Specifically, let `B` be a proposition. We have:
   rec f (squash x y i) = bprop (rec f x) (rec f y) i
 
   beta : _
-  beta f = funext (∥-∥-elim (λ _ → isProp→isSet bprop _ _) (λ _ → refl))
+  beta f = funext (∥-∥-elim (λ _ → is-prop→is-set bprop _ _) (λ _ → refl))
 ```
 
 Furthermore, as required of a free construction, the propositional
@@ -94,7 +109,7 @@ truncation extends to a functor:
 
 ```agda
 ∥-∥-map : ∀ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'}
-        → (A → B) → ∥ A ∥ → ∥ B ∥ 
+        → (A → B) → ∥ A ∥ → ∥ B ∥
 ∥-∥-map f (inc x)        = inc (f x)
 ∥-∥-map f (squash x y i) = squash (∥-∥-map f x) (∥-∥-map f y) i
 ```
@@ -123,23 +138,25 @@ Note that if $P$ is already a proposition, then truncating it does
 nothing:
 
 ```agda
-isProp→equiv∥-∥ : ∀ {ℓ} {P : Type ℓ} → isProp P → P ≃ ∥ P ∥
-isProp→equiv∥-∥ pprop = propExt pprop squash inc (∥-∥-elim (λ x → pprop) λ x → x)
+is-prop→equiv∥-∥ : ∀ {ℓ} {P : Type ℓ} → is-prop P → P ≃ ∥ P ∥
+is-prop→equiv∥-∥ pprop = prop-ext pprop squash inc (∥-∥-elim (λ x → pprop) λ x → x)
 ```
 
-In fact, an alternative definition of `isProp`{.Agda} is given by "being
+In fact, an alternative definition of `is-prop`{.Agda} is given by "being
 equivalent to your own truncation":
 
 ```agda
-isProp≃equiv∥-∥ : ∀ {ℓ} {P : Type ℓ}
-               → isProp P ≃ (P ≃ ∥ P ∥)
-isProp≃equiv∥-∥ {P = P} = propExt isProp-isProp eqv-prop isProp→equiv∥-∥ inv where
-  inv : (P ≃ ∥ P ∥) → isProp P
-  inv eqv = isHLevel-equiv 1 ((eqv e⁻¹) .fst) ((eqv e⁻¹) .snd) squash
+is-prop≃equiv∥-∥ : ∀ {ℓ} {P : Type ℓ}
+               → is-prop P ≃ (P ≃ ∥ P ∥)
+is-prop≃equiv∥-∥ {P = P} =
+  prop-ext is-prop-is-prop eqv-prop is-prop→equiv∥-∥ inv
+  where
+    inv : (P ≃ ∥ P ∥) → is-prop P
+    inv eqv = equiv→is-hlevel 1 ((eqv e⁻¹) .fst) ((eqv e⁻¹) .snd) squash
 
-  eqv-prop : isProp (P ≃ ∥ P ∥)
-  eqv-prop x y = Σ-Path (λ i p → squash (x .fst p) (y .fst p) i)
-                        (isProp-isEquiv _ _ _)
+    eqv-prop : is-prop (P ≃ ∥ P ∥)
+    eqv-prop x y = Σ-path (λ i p → squash (x .fst p) (y .fst p) i)
+                          (is-equiv-is-prop _ _ _)
 ```
 
 ## Maps into Sets
@@ -154,7 +171,7 @@ The answer is yes! However, the witness of  constancy we use must be
 very coherent indeed. In particular, we need enough coherence on top of
 a family of paths $(x\ y : A) \to f x \equiv_B f y$ to ensure that the
 image of $f$ is a proposition; Then we can map from $\| A \| \to
-\mathrm{im}(f) \to B$.
+\id{im}(f) \to B$.
 
 From the discussion in [1Lab.Counterexamples.Sigma], we know the
 definition of image, or more properly of $(-1)$-image:
@@ -171,10 +188,10 @@ we define a way to factor any map through its image. By the definition
 of image, we have that the map `f-image`{.Agda} is always surjective,
 and since `∃` is a family of props, the first projection out of
 `image`{.Agda} is an embedding. Thus we factor a map $f$ as $A \epi
-\mathrm{image}(f) \mono B$.
+\id{image}(f) \mono B$.
 
 ```agda
-f-image 
+f-image
   : ∀ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'}
   → (f : A → B) → A → image f
 f-image f x = f x , inc (x , refl)
@@ -182,14 +199,14 @@ f-image f x = f x , inc (x , refl)
 
 We now prove the theorem that will let us map out of a propositional
 truncation using a constant function into sets: if $B$ is a set, and $f
-: A \to B$ is a constant function, then $\mathrm{image}(f)$ is a
-proposition. 
+: A \to B$ is a constant function, then $\id{image}(f)$ is a
+proposition.
 
 ```agda
-isConstant→isProp-image 
+is-constant→image-is-prop
   : ∀ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'}
-  → isSet B
-  → (f : A → B) → (∀ x y → f x ≡ f y) → isProp (image f)
+  → is-set B
+  → (f : A → B) → (∀ x y → f x ≡ f y) → is-prop (image f)
 ```
 
 This is intuitively true (if the function is constant, then there is at
@@ -202,12 +219,12 @@ and $(b, y)$ in the image. We know, morally, that $x$ (respectively $y$) give us
 some $f^*(a) : A$ and $p : f(f^*a) = a$ (resp $q : f(f^*(b)) = b$) ---
 which would establish that $a \equiv b$, as we need, since we have $a =
 f(f^*(a)) = f(f^*(b)) = b$, where the middle equation is by constancy of
-$f$ --- but crucially, the 
+$f$ --- but crucially, the
 
 ```agda
-isConstant→isProp-image bset f f-const (a , x) (b , y) = 
-  Σ≡Prop (λ _ → squash)
-    (∥-∥-elim₂ (λ _ _ → bset _ _) 
+is-constant→image-is-prop bset f f-const (a , x) (b , y) =
+  Σ-prop-path (λ _ → squash)
+    (∥-∥-elim₂ (λ _ _ → bset _ _)
       (λ { (f*a , p) (f*b , q) → sym p ·· f-const f*a f*b ·· q }) x y)
 ```
 
@@ -215,12 +232,12 @@ Using the image factorisation, we can project from a propositional
 truncation onto a set using a constant map.
 
 ```agda
-∥-∥-recSet : ∀ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'}
-           → (f : A → B)
-           → (∀ x y → f x ≡ f y)
-           → isSet B
-           → ∥ A ∥ → B
-∥-∥-recSet {A = A} {B} f f-const bset x = 
-  ∥-∥-elim {P = λ _ → image f} 
-    (λ _ → isConstant→isProp-image bset f f-const) (f-image f) x .fst
+∥-∥-rec-set : ∀ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'}
+            → (f : A → B)
+            → (∀ x y → f x ≡ f y)
+            → is-set B
+            → ∥ A ∥ → B
+∥-∥-rec-set {A = A} {B} f f-const bset x =
+  ∥-∥-elim {P = λ _ → image f}
+    (λ _ → is-constant→image-is-prop bset f f-const) (f-image f) x .fst
 ```

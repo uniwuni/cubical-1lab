@@ -38,40 +38,34 @@ base category along with a morphism that lives above it.
 
 ```agda
 
-record TotalHom (X Y : Total) : Type (ℓ ⊔ ℓ′) where
+record Total-hom (X Y : Total) : Type (ℓ ⊔ ℓ′) where
   constructor total-hom
   field
     hom       : Hom (X .fst) (Y .fst)
     preserves : Hom[ hom ] (X .snd) (Y .snd)
 
-open TotalHom
+open Total-hom
 ```
+
+<!--
+```agda
+private unquoteDecl eqv = declare-record-iso eqv (quote Total-hom)
+```
+-->
 
 As is tradition, we need to prove some silly lemmas showing that
 the bundled morphisms form an hset, and another characterizing
 the paths between morphisms.
 
 ```agda
-total-hom-set : ∀ (X Y : Total) → isSet (TotalHom X Y)
-total-hom-set X Y =
-  isHLevel-retract 2 TotalHom-Refold TotalHom-Unfold (λ x → refl) TotalHom′-isSet
+total-hom-is-set : ∀ (X Y : Total) → is-set (Total-hom X Y)
+total-hom-is-set X Y =
+  is-hlevel≃ 2 (Iso→Equiv eqv e⁻¹) Total-hom′-is-set
   where
-    TotalHom′ : Type _
-    TotalHom′ = Σ[ hom ∈ Hom (X .fst) (Y .fst) ]
-                Hom[ hom ] (X .snd) (Y .snd)
+    Total-hom′-is-set : is-set _
+    Total-hom′-is-set = Σ-is-hlevel 2 (Hom-set _ _) λ f → Hom[ f ]-set _ _
 
-    TotalHom-Refold : TotalHom′ → TotalHom X Y 
-    TotalHom-Refold (h , p) = total-hom h p
-
-    TotalHom-Unfold : TotalHom X Y → TotalHom′
-    TotalHom-Unfold t = t .hom , t .preserves
-
-    TotalHom′-isSet : isSet TotalHom′
-    TotalHom′-isSet =
-      isHLevelΣ 2 (Hom-set _ _)
-                  λ f → Hom[ f ]-set _ _
-
-total-hom-path : ∀ {X Y : Total} {f g : TotalHom X Y}
+total-hom-path : ∀ {X Y : Total} {f g : Total-hom X Y}
                  → (p : f .hom ≡ g .hom) → f .preserves ≡[ p ] g .preserves → f ≡ g
 total-hom-path p p′ i .hom = p i
 total-hom-path {f = f} {g = g} p p′ i .preserves = p′ i
@@ -82,8 +76,8 @@ With all that in place, we can construct the total category!
 ```agda
 ∫ : Precategory (o ⊔ o′) (ℓ ⊔ ℓ′)
 ∫ .Precategory.Ob = Total
-∫ .Precategory.Hom = TotalHom
-∫ .Precategory.Hom-set = total-hom-set
+∫ .Precategory.Hom = Total-hom
+∫ .Precategory.Hom-set = total-hom-is-set
 ∫ .Precategory.id = total-hom id id′
 ∫ .Precategory._∘_ f g = total-hom (f .hom ∘ g .hom) (f .preserves ∘′ g .preserves)
 ∫ .Precategory.idr _ = total-hom-path (idr _) (idr′ _)

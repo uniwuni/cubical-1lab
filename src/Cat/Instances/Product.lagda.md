@@ -19,7 +19,7 @@ private variable
 Given two categories $\ca{C}$ and $\ca{D}$, we construct their product
 $\ca{C} \times_\cat \ca{D}$. The objects of the product are
 pairs $(x,y)$ where $x \in \ca{C}$ and $y \in \ca{D}$; The product
-admits projection functors $\ca{C} \times_\mathrm{Cat} \ca{D} \to
+admits projection functors $\ca{C} \times_\id{Cat} \ca{D} \to
 \ca{C}$ (onto both factors, not just the first), and given a diagram of
 categories as below, there is a unique (in the bicategorical sense)
 functor $\mathcal{A} \to \ca{C} \times_\cat \ca{D}$ making the
@@ -28,7 +28,7 @@ diagram commute.
 ~~~{.quiver}
 \[\begin{tikzcd}
   & {\mathcal{A}} \\
-  {\mathcal{C}} & {\mathcal{C} \times_\mathrm{Cat} \mathcal{D}} & {\mathcal{D}}
+  {\mathcal{C}} & {\mathcal{C} \times_\id{Cat} \mathcal{D}} & {\mathcal{D}}
   \arrow["{\exists!}", dashed, from=1-2, to=2-2]
   \arrow[from=1-2, to=2-1]
   \arrow[from=1-2, to=2-3]
@@ -56,12 +56,12 @@ C ×Cat D = prodcat where
   prodcat : Precategory _ _
   prodcat .Ob = Ob C × Ob D
   prodcat .Hom (a , a') (b , b') = Hom C a b × Hom D a' b'
-  prodcat .Hom-set (a , a') (b , b') = isHLevel× 2 (Hom-set C a b) (Hom-set D a' b')
+  prodcat .Hom-set (a , a') (b , b') = ×-is-hlevel 2 (Hom-set C a b) (Hom-set D a' b')
   prodcat .id = id C , id D
   prodcat ._∘_ (f , f') (g , g') = f C.∘ g , f' D.∘ g'
   prodcat .idr (f , f') i = C.idr f i , D.idr f' i
   prodcat .idl (f , f') i = C.idl f i , D.idl f' i
-  prodcat .assoc (f , f') (g , g') (h , h') i = 
+  prodcat .assoc (f , f') (g , g') (h , h') i =
     C.assoc f g h i , D.assoc f' g' h' i
 
 infixr 20 _×Cat_
@@ -84,7 +84,7 @@ Snd .F₁ = snd
 Snd .F-id = refl
 Snd .F-∘ _ _ = refl
 
-Cat⟨_,_⟩ : Functor E C → Functor E D → Functor E (C ×Cat D) 
+Cat⟨_,_⟩ : Functor E C → Functor E D → Functor E (C ×Cat D)
 Cat⟨ F , G ⟩ = f where
   f : Functor _ _
   f .F₀ x = F₀ F x , F₀ G x

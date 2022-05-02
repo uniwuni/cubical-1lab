@@ -5,7 +5,7 @@ open import Algebra.Group
 
 module Algebra.Group.Cayley {ℓ} (G : Group ℓ) where
 
-open GroupOn (G .snd) renaming (underlying-set to G-set)
+open Group-on (G .snd) renaming (underlying-set to G-set)
 ```
 
 # Cayley's Theorem
@@ -27,39 +27,35 @@ Cayley : G .fst → G .fst ≃ G .fst
 Cayley x = Iso→Equiv bij where
   bij : Iso _ _
   bij .fst y = x ⋆ y
-  bij .snd .isIso.inv y = x ⁻¹ ⋆ y
-  bij .snd .isIso.rinv y =
-    x ⋆ (x ⁻¹ ⋆ y) ≡⟨ associative ⟩
-    (x ⋆ x ⁻¹) ⋆ y ≡⟨ ap₂ _⋆_ inverseʳ refl ⟩
-    unit ⋆ y       ≡⟨ idˡ ⟩
+  bij .snd .is-iso.inv y = x ⁻¹ ⋆ y
+  bij .snd .is-iso.rinv y =
+    x ⋆ (x ⁻¹ ⋆ y) ≡⟨ cancell inverser ⟩
     y              ∎
-  bij .snd .isIso.linv y =
-    x ⁻¹ ⋆ (x ⋆ y) ≡⟨ associative ⟩
-    (x ⁻¹ ⋆ x) ⋆ y ≡⟨ ap₂ _⋆_ inverseˡ refl ⟩
-    unit ⋆ y       ≡⟨ idˡ ⟩
+  bij .snd .is-iso.linv y =
+    x ⁻¹ ⋆ (x ⋆ y) ≡⟨ cancell inversel ⟩
     y              ∎
 ```
 
 We then show that this map is a group homomorphism from $G$ to
-$\mathrm{Sym}(G)$:
+$\id{Sym}(G)$:
 
 ```agda
-Cayley-isHom : isGroupHom G (Sym G-set) Cayley
-Cayley-isHom .isGroupHom.pres-⋆ x y = Σ≡Prop isProp-isEquiv (funext lemma) where
+Cayley-is-hom : Group-hom G (Sym G-set) Cayley
+Cayley-is-hom .Group-hom.pres-⋆ x y = Σ-prop-path is-equiv-is-prop (funext lemma) where
   lemma : (e : G .fst) → (x ⋆ y) ⋆ e ≡ x ⋆ (y ⋆ e)
   lemma e = sym associative
 ```
 
 Finally, we show that this map is injective; Thus, $G$ embeds as a
-subgroup of $\mathrm{Sym}(G)$ (the image of `Cayley`{.Agda}).
+subgroup of $\id{Sym}(G)$ (the image of `Cayley`{.Agda}).
 
 ```agda
 Cayley-injective : injective Cayley
 Cayley-injective {x} {y} eqvs-equal =
-  x                   ≡⟨ sym idʳ ⟩
-  x ⋆ unit            ≡⟨⟩ 
+  x                   ≡⟨ sym idr ⟩
+  x ⋆ unit            ≡⟨⟩
   Cayley x .fst unit  ≡⟨ happly (ap fst eqvs-equal) unit ⟩
   Cayley y .fst unit  ≡⟨⟩
-  y ⋆ unit            ≡⟨ idʳ ⟩
+  y ⋆ unit            ≡⟨ idr ⟩
   y                   ∎
 ```

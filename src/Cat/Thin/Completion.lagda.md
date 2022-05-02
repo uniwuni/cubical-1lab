@@ -60,17 +60,15 @@ the assumed inequalities:
 
 ```agda
   private abstract
-    p1 : (a : C.Ob) ((x , y , r) : Σ[ x ∈ C.Ob ] Σ[ y ∈ C.Ob ] x ~ y) 
-      → Path (Prop h) (C.Hom x a , C.isThin x a) (C.Hom y a , C.isThin y a)
-    p1 a (x , y , f , g) = 
-      Σ≡Prop (λ _ → isProp-isProp) 
-        (ua (propExt (C.isThin _ _) (C.isThin _ _) (λ h → h C.∘ g) (λ h → h C.∘ f)))
+    p1 : (a : C.Ob) ((x , y , r) : Σ[ x ∈ C.Ob ] Σ[ y ∈ C.Ob ] x ~ y)
+      → Path (Prop h) (C.Hom x a , C.Hom-is-prop x a) (C.Hom y a , C.Hom-is-prop y a)
+    p1 a (x , y , f , g) =
+      n-ua (prop-ext (C.Hom-is-prop _ _) (C.Hom-is-prop _ _) (λ h → h C.∘ g) (λ h → h C.∘ f))
 
-    p2 : (a : C.Ob) ((x , y , r) : Σ[ x ∈ C.Ob ] Σ[ y ∈ C.Ob ] x ~ y) 
-      → Path (Prop h) (C.Hom a x , C.isThin a x) (C.Hom a y , C.isThin a y)
-    p2 a (x , y , f , g) = 
-      Σ≡Prop (λ _ → isProp-isProp) 
-        (ua (propExt (C.isThin _ _) (C.isThin _ _) (λ h → f C.∘ h) (λ h → g C.∘ h)))
+    p2 : (a : C.Ob) ((x , y , r) : Σ[ x ∈ C.Ob ] Σ[ y ∈ C.Ob ] x ~ y)
+      → Path (Prop h) (C.Hom a x , C.Hom-is-prop a x) (C.Hom a y , C.Hom-is-prop a y)
+    p2 a (x , y , f , g) =
+      n-ua (prop-ext (C.Hom-is-prop _ _) (C.Hom-is-prop _ _) (λ h → f C.∘ h) (λ h → g C.∘ h))
 ```
 
 We can then eliminate from our quotient to the `type of
@@ -82,10 +80,10 @@ quotient, hence `Hom′`{.Agda} below exists:
 
 ```agda
   Hom′ : Ob′ → Ob′ → Prop _
-  Hom′ = Coeq-rec₂ (isHLevel-nType 1) (λ x y → C.Hom x y , C.isThin x y) p1 p2
+  Hom′ = Coeq-rec₂ (n-Type-is-hlevel 1) (λ x y → C.Hom x y , C.Hom-is-prop x y) p1 p2
 
-  Hom′-prop : ∀ (x y : Ob′) (f g : Hom′ x y .fst) → f ≡ g
-  Hom′-prop x y f g = Hom′ x y .snd f g
+  Hom′-prop : ∀ (x y : Ob′) (f g : ∣ Hom′ x y ∣) → f ≡ g
+  Hom′-prop x y f g = Hom′ x y .is-tr f g
 ```
 
 We can now prove that `Hom′`{.Agda} is `reflexive`{.Agda ident=id′},
@@ -94,17 +92,17 @@ ident=antisym′}. We get these by elimination on the domains/codomains of
 the map:
 
 ```agda
-  id′ : ∀ x → Hom′ x x .fst
-  id′ = Coeq-elimProp (λ x → Hom′ x x .snd) (λ _ → C.id)
+  id′ : ∀ x → ∣ Hom′ x x ∣
+  id′ = Coeq-elim-prop (λ x → Hom′ x x .is-tr) (λ _ → C.id)
 
-  trans′ : ∀ x y z → Hom′ x y .fst → Hom′ y z .fst → Hom′ x z .fst
-  trans′ = Coeq-elimProp₃ 
-    (λ x _ z → isHLevel→ 1 (isHLevel→ 1 (Hom′ x z .snd))) 
+  trans′ : ∀ x y z → ∣ Hom′ x y ∣ → ∣ Hom′ y z ∣ → ∣ Hom′ x z ∣
+  trans′ = Coeq-elim-prop₃
+    (λ x _ z → fun-is-hlevel 1 (fun-is-hlevel 1 (Hom′ x z .is-tr)))
     (λ _ _ _ f g → g C.∘ f)
 
-  antisym′ : ∀ x y → Hom′ x y .fst → Hom′ y x .fst → x ≡ y
-  antisym′ = Coeq-elimProp₂ 
-    (λ x y → isHLevel→ 1 (isHLevel→ 1 (squash _ _))) 
+  antisym′ : ∀ x y → ∣ Hom′ x y ∣ → ∣ Hom′ y x ∣ → x ≡ y
+  antisym′ = Coeq-elim-prop₂
+    (λ x y → hlevel 1)
     (λ x y f g → quot (f , g))
 ```
 
@@ -112,13 +110,13 @@ The data above cleanly defines a `Poset`{.Agda}, so we're done!
 
 ```agda
   completed : Poset (o ⊔ h) h
-  completed = makePoset {A = Ob′} {R = λ x y → Hom′ x y .fst} 
-      (λ {x} → id′ x) 
-      (λ {x} {y} {z} → trans′ x y z) 
-      (λ {x} {y} → antisym′ x y) 
-      (λ {x} {y} → Hom′ x y .snd)
+  completed = make-poset {A = Ob′} {R = λ x y → ∣ Hom′ x y ∣}
+      (λ {x} → id′ x)
+      (λ {x} {y} {z} → trans′ x y z)
+      (λ {x} {y} → antisym′ x y)
+      (λ {x} {y} → Hom′ x y .is-tr)
 
-open Poset-completion 
+open Poset-completion
   renaming (completed to Poset-completion)
   hiding (Ob′ ; Hom′ ; Hom′-prop ; trans′ ; antisym′ ; id′)
 ```
@@ -130,7 +128,7 @@ and the underlying category of its completion $\widehat{\ca{C}}$, with
 object part given by the quotient map `inc`{.Agda}.
 
 ```agda
-Complete : ∀ {o h} {X : Proset o h} 
+Complete : ∀ {o h} {X : Proset o h}
          → Functor (X .underlying) (Poset-completion X .underlying)
 Complete .F₀ = inc
 Complete .F₁ x = x
@@ -143,8 +141,9 @@ fully faithful. It exhibits $\ca{C}$ as a full subproset of
 $\widehat{\ca{C}}$.
 
 ```agda
-Complete-ff : ∀ {o h} {X : Proset o h} → isFf (Complete {X = X})
-Complete-ff = idEquiv
+Complete-is-fully-faithful
+  : ∀ {o h} {X : Proset o h} → is-fully-faithful (Complete {X = X})
+Complete-is-fully-faithful = id-equiv
 ```
 
 ## Lifting functors
@@ -156,9 +155,9 @@ showing that $F_0$, i.e. the action of $F$ on the objects of $\ca{X}$,
 respects the quotient which defines $\widehat{\ca{X}}$.
 
 ```agda
-module _ 
-  {o h} (X Y : Proset o h) 
-  (F : Functor (X .underlying) (Y .underlying)) 
+module _
+  {o h} (X Y : Proset o h)
+  (F : Functor (X .underlying) (Y .underlying))
   where
 
   private
@@ -172,8 +171,8 @@ immediate by monotonicity of $F$.
 
 ```agda
     F′₀ : X′.Ob → Y′.Ob
-    F′₀ = Coeq-rec Y′.isStrict 
-      (λ x → inc (F₀ F x)) 
+    F′₀ = Coeq-rec Y′.Ob-is-set
+      (λ x → inc (F₀ F x))
       (λ (_ , _ , f , g) → quot (F₁ F f , F₁ F g))
 ```
 
@@ -184,34 +183,34 @@ move.
 
 ```agda
     F′₁ : (a b : X′.Ob) → X′.Hom a b → Y′.Hom (F′₀ a) (F′₀ b)
-    F′₁ = Coeq-elimProp₂ 
-      (λ a b → isHLevel→ 1 (Y′.isThin (F′₀ a) (F′₀ b))) 
+    F′₁ = Coeq-elim-prop₂
+      (λ a b → fun-is-hlevel 1 (Y′.Hom-is-prop (F′₀ a) (F′₀ b)))
       (λ _ _ → F₁ F)
 
     abstract
       F′₁-id : ∀ (a : X′.Ob) → F′₁ a a (X′.id {a}) ≡ Y′.id {F′₀ a}
-      F′₁-id = Coeq-elimProp 
-        (λ a → Y′.Hom-set (F′₀ a) (F′₀ a) _ _) 
+      F′₁-id = Coeq-elim-prop
+        (λ a → Y′.Hom-set (F′₀ a) (F′₀ a) _ _)
         (λ a → F-id F)
 
       F′₁-∘ : ∀ (x y z : X′.Ob) (f : X′.Hom y z) (g : X′.Hom x y)
-            → F′₁ x z (X′._∘_ {x} {y} {z} f g) 
+            → F′₁ x z (X′._∘_ {x} {y} {z} f g)
             ≡ Y′._∘_ {F′₀ x} {F′₀ y} {F′₀ z} (F′₁ y z f) (F′₁ x y g)
-      F′₁-∘ = 
-        Coeq-elimProp₃ 
-          (λ x y z → 
-            isHLevelΠ 1 λ f → 
-            isHLevelΠ 1 λ g → 
-            Y′.Hom-set (F′₀ x) (F′₀ z) _ _) 
+      F′₁-∘ =
+        Coeq-elim-prop₃
+          (λ x y z →
+            Π-is-hlevel 1 λ f →
+            Π-is-hlevel 1 λ g →
+            Y′.Hom-set (F′₀ x) (F′₀ z) _ _)
           λ x y z f g → F-∘ F f g
 ```
 
 This defines a map between the completions of $\ca{X}$ and $\ca{Y}$:
 
 ```agda
-  liftToCompletion : Functor X′.underlying Y′.underlying
-  liftToCompletion .F₀               = F′₀
-  liftToCompletion .F₁   {x} {y}     = F′₁ x y
-  liftToCompletion .F-id {x}         = F′₁-id x
-  liftToCompletion .F-∘  {x} {y} {z} = F′₁-∘ x y z
+  Poset-completion-embedding : Functor X′.underlying Y′.underlying
+  Poset-completion-embedding .F₀               = F′₀
+  Poset-completion-embedding .F₁   {x} {y}     = F′₁ x y
+  Poset-completion-embedding .F-id {x}         = F′₁-id x
+  Poset-completion-embedding .F-∘  {x} {y} {z} = F′₁-∘ x y z
 ```

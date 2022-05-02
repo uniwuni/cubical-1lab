@@ -3,6 +3,9 @@ open import Cat.Diagram.Initial
 open import Cat.Instances.Comma
 open import Cat.Prelude
 
+import Cat.Functor.Reasoning as Func
+import Cat.Reasoning
+
 module Cat.Functor.Adjoint where
 ```
 
@@ -12,10 +15,10 @@ private variable
   o h : Level
   C D : Precategory o h
 
-open Functor
+open Functor hiding (op)
 
-adj-level : ∀ {o₁ h₁ o₂ h₂} {C : Precategory o₁ h₁} {D : Precategory o₂ h₂}
-          → Functor C D → Functor D C → Level
+adj-level : ∀ {o₁ h₁ o₂ h₂} (C : Precategory o₁ h₁) (D : Precategory o₂ h₂)
+          → Level
 adj-level {o₁ = o₁} {h₁} {o₂} {h₂} _ _ = o₁ ⊔ o₂ ⊔ h₁ ⊔ h₂
 ```
 -->
@@ -41,15 +44,15 @@ of categories, where "directing" an equivalence gives us the concept of
 
 An _equivalence of categories_ between $\ca{C}$ and $\ca{D}$ is given by
 a pair of functors $L : \ca{C} \leftrightarrows \ca{D} : R$, equipped
-with natural _isomorphisms_ $\eta : \mathrm{Id} \cong (R \circ L)$ (the
-"unit") and $\eps : (L \circ R) \cong \mathrm{Id}$ (the "counit"). We
+with natural _isomorphisms_ $\eta : \id{Id} \cong (R \circ L)$ (the
+"unit") and $\eps : (L \circ R) \cong \id{Id}$ (the "counit"). We
 still want the correspondence to be bidirectional, so we can't change
 the types of $R$, $L$; What we _can_ do is weaken the natural
 isomorphisms to natural _transformations_. The data of an **adjunction**
 starts as such:
 
 ```agda
-record _⊣_ (L : Functor C D) (R : Functor D C) : Type (adj-level L R) where
+record _⊣_ (L : Functor C D) (R : Functor D C) : Type (adj-level C D) where
   private
     module C = Precategory C
     module D = Precategory D
@@ -74,6 +77,8 @@ transformations to make sure these match:
   field
     zig : ∀ {A} → counit.ε (F₀ L A) D.∘ F₁ L (unit.η A) ≡ D.id
     zag : ∀ {B} → F₁ R (counit.ε B) C.∘ unit.η (F₀ R B) ≡ C.id
+
+infixr 15 _⊣_
 ```
 
 These are called "triangle identities" because of the shape they have as
@@ -107,7 +112,7 @@ commutative diagrams:
 
 <!--
 ```agda
-module _ 
+module _
   {o h o' h'}
   {C : Precategory o h}
   {D : Precategory o' h'}
@@ -164,7 +169,7 @@ of adjunction, we show that this assignment extends to a functor $L : C
 
 <!--
 ```agda
-module _ 
+module _
   {o h o' h'}
   {C : Precategory o h}
   {D : Precategory o' h'}
@@ -209,12 +214,12 @@ object in $a \swarrow R$ (see `lift↓`{.Agda} below).
 
 ```agda
   private
-    toOb : ∀ {a b} → C.Hom a b → (a ↙ R) .Precategory.Ob
-    toOb {a} {b} h = record { map = L₀′ b C.∘ h }
+    to-ob : ∀ {a b} → C.Hom a b → (a ↙ R) .Precategory.Ob
+    to-ob {a} {b} h = record { map = L₀′ b C.∘ h }
 
-    lift↓ : ∀ {x y} (g : C.Hom x y) 
-          → Precategory.Hom (x ↙ R) (universal-map-for x .bot) (toOb g)
-    lift↓ {x} {y} g = ¡ (universal-map-for x) {toOb g}
+    lift↓ : ∀ {x y} (g : C.Hom x y)
+          → Precategory.Hom (x ↙ R) (universal-map-for x .bot) (to-ob g)
+    lift↓ {x} {y} g = ¡ (universal-map-for x) {to-ob g}
 
   L₁ : ∀ {a b} → C.Hom a b → D.Hom (L₀ a) (L₀ b)
   L₁ {a} {b} x = lift↓ x .β
@@ -230,20 +235,20 @@ object.
 ```agda
   private abstract
     L-id : ∀ {a} → L₁ (C.id {a}) ≡ D.id {L₀ a}
-    L-id {a} = ap β (¡-unique (universal-map-for a) 
-                      (record { sq = C.elimr refl 
-                                  ·· C.elimr refl 
+    L-id {a} = ap β (¡-unique (universal-map-for a)
+                      (record { sq = C.elimr refl
+                                  ·· C.elimr refl
                                   ·· sym (C.eliml R.F-id) }))
 
-    lemma : ∀ {x y z} (f : C.Hom y z) (g : C.Hom x y) 
+    lemma : ∀ {x y z} (f : C.Hom y z) (g : C.Hom x y)
           → R.₁ (L₁ f D.∘ L₁ g) C.∘ (L₀′ x)
-          ≡ toOb (f C.∘ g) .map C.∘ C.id
-    lemma {x} {y} {z} f g = 
-      R.₁ (lift↓ f .β D.∘ lift↓ g .β) C.∘ (L₀′ x)       ≡˘⟨ C.pulll (sym (R.F-∘ _ _)) ⟩
+          ≡ to-ob (f C.∘ g) .map C.∘ C.id
+    lemma {x} {y} {z} f g =
+      R.₁ (lift↓ f .β D.∘ lift↓ g .β) C.∘ (L₀′ x)       ≡⟨ C.pushl (R.F-∘ _ _) ⟩
       R.₁ (lift↓ f .β) C.∘ R.₁ (lift↓ g .β) C.∘ (L₀′ x) ≡⟨ ap (R.₁ (lift↓ f .β) C.∘_) (sym (lift↓ g .↓Hom.sq) ∙ C.idr _) ⟩
       R.₁ (lift↓ f .β) C.∘ L₀′ y C.∘ g                  ≡⟨ C.extendl (sym (lift↓ f .↓Hom.sq) ∙ C.idr _) ⟩
       L₀′ z C.∘ f C.∘ g                                 ≡˘⟨ C.idr _ ⟩
-      toOb (f C.∘ g) .map C.∘ C.id                      ∎
+      to-ob (f C.∘ g) .map C.∘ C.id                     ∎
 
     L-∘ : ∀ {x y z} (f : C.Hom y z) (g : C.Hom x y)
         → L₁ (f C.∘ g) ≡ L₁ f D.∘ L₁ g
@@ -255,16 +260,16 @@ That out of the way, we have our $L$ functor. We now have to show that
 it defines a left adjoint to the $R$ we started with.
 
 ```agda
-  universalMaps→L : Functor C D
-  universalMaps→L .F₀ = L₀
-  universalMaps→L .F₁ = L₁
-  universalMaps→L .F-id = L-id
-  universalMaps→L .F-∘ = L-∘
+  universal-maps→L : Functor C D
+  universal-maps→L .F₀ = L₀
+  universal-maps→L .F₁ = L₁
+  universal-maps→L .F-id = L-id
+  universal-maps→L .F-∘ = L-∘
 ```
 
 <!--
 ```agda
-  open _⊣_ 
+  open _⊣_
   open _=>_
 ```
 -->
@@ -272,8 +277,8 @@ it defines a left adjoint to the $R$ we started with.
 ## Building the adjunction
 
 We now prove that $L \dashv R$, which, recall, means giving natural
-transformations $\eta : \mathrm{Id} \To (R F\circ L)$ (the
-_adjunction unit_) and $\eps : (L \circ R) \To \mathrm{Id}$ (the
+transformations $\eta : \id{Id} \To (R F\circ L)$ (the
+_adjunction unit_) and $\eps : (L \circ R) \To \id{Id}$ (the
 _adjunction counit_). We begin with the counit, since that's more
 involved.
 
@@ -295,7 +300,7 @@ object as $(L(R(x)), !)$ --- recall that here, $! : R(x) \to RLR(x)$.
 
 This means, in particular, that for any other object $(y, f)$ (with $y
 \in \ca{D}$ and $f : R(x) \to R(y)$ in $\ca{C}$), there is a unique map
-$\mathrm{mapd}(x) \to (y, f)$, which breaks down as a map $\beta :
+$\id{mapd}(x) \to (y, f)$, which breaks down as a map $\beta :
 L(R(x)) \to y$ such that the square below commutes.
 
 ~~~{.quiver}
@@ -313,25 +318,25 @@ L(R(x)) \to y$ such that the square below commutes.
     ε x = Initial.¡ (universal-map-for (R.₀ x)) {x = record { y = x ; map = C.id }}
 ```
 
-The magic trick is that, if we pick $(x, \mathrm{id})$ as the object of
+The magic trick is that, if we pick $(x, \id{id})$ as the object of
 $R(x)\swarrow R$ to map into, then $\beta$ in the diagram above must be
 $LR(x) \to x$! We choose this map as our adjunction counit. A tedious
 calculation shows that this assignment is natural, essentially because
 $\beta$ is unique.
 
 ```agda
-  universalMaps→L⊣R : universalMaps→L ⊣ R
-  universalMaps→L⊣R .counit .η x = ε x .↓Hom.β
-  universalMaps→L⊣R .counit .is-natural x y f = 
+  universal-maps→L⊣R : universal-maps→L ⊣ R
+  universal-maps→L⊣R .counit .η x = ε x .↓Hom.β
+  universal-maps→L⊣R .counit .is-natural x y f =
     ap ↓Hom.β (
       ¡-unique₂ (universal-map-for (R.₀ x)) {record { map = R.₁ f }}
-      (record { sq = 
+      (record { sq =
         R.₁ f C.∘ C.id                                          ≡⟨ C.idr _ ⟩
         R.₁ f                                                   ≡˘⟨ C.cancell (sym (ε y .↓Hom.sq) ∙ C.idr _) ⟩
         R.₁ (ε y .β) C.∘ _ C.∘ R.₁ f                            ≡˘⟨ ap₂ C._∘_ refl (sym (lift↓ (R.₁ f) .↓Hom.sq) ∙ C.idr _) ⟩
         R.₁ (ε y .β) C.∘ R.₁ (L₁ (R.₁ f)) C.∘ mapd (R.₀ x) .map ≡⟨ C.pulll (sym (R.F-∘ _ _)) ⟩
-        R.₁ (ε y .β D.∘ L₁ (R.₁ f)) C.∘ mapd (R.₀ x) .map       ∎ }) 
-      (record { sq = 
+        R.₁ (ε y .β D.∘ L₁ (R.₁ f)) C.∘ mapd (R.₀ x) .map       ∎ })
+      (record { sq =
         R.₁ f C.∘ C.id                               ≡˘⟨ ap (R.₁ f C.∘_) (sym (ε x .↓Hom.sq) ∙ C.idr _) ⟩
         R.₁ f C.∘ R.₁ (ε x .β) C.∘ mapd (R.₀ x) .map ≡⟨ C.pulll (sym (R.F-∘ _ _)) ⟩
         R.₁ (f D.∘ ε x .β) C.∘ mapd (R.₀ x) .map     ∎ }))
@@ -345,8 +350,8 @@ It's so "by definition" that Agda can figure out the components by
 itself:
 
 ```agda
-  universalMaps→L⊣R .unit .η x              = _
-  universalMaps→L⊣R .unit .is-natural x y f = sym (C.idr _) ∙ lift↓ f .↓Hom.sq
+  universal-maps→L⊣R .unit .η x              = _
+  universal-maps→L⊣R .unit .is-natural x y f = sym (C.idr _) ∙ lift↓ f .↓Hom.sq
 ```
 
 If you think back to the adjunction counit, you'll recall that it
@@ -359,14 +364,14 @@ adjunction unit to be, so.. It's `zag`{.Agda}.
   {R(x)} && {RLR(x)} \\
   \\
   && R(x)
-  \arrow["{\mathrm{id}}"', from=1-1, to=3-3]
+  \arrow["{\id{id}}"', from=1-1, to=3-3]
   \arrow["{!}", from=1-1, to=1-3]
   \arrow["{R(\beta)}", from=1-3, to=3-3]
 \end{tikzcd}\]
 ~~~
 
 ```agda
-  universalMaps→L⊣R .zag {x} = sym (ε x .↓Hom.sq) ∙ C.idr _
+  universal-maps→L⊣R .zag {x} = sym (ε x .↓Hom.sq) ∙ C.idr _
 ```
 
 The other triangle identity is slightly more annoying, but it works just
@@ -374,22 +379,213 @@ as well. It follows from the uniqueness of maps out of the initial
 object:
 
 ```agda
-  universalMaps→L⊣R .zig {x} = 
+  universal-maps→L⊣R .zig {x} =
     ap ↓Hom.β (
       ¡-unique₂ (universal-map-for x) {record { map = α }}
-        (record { sq = 
+        (record { sq =
           α C.∘ C.id                     ≡⟨ C.idr _ ⟩
           α                              ≡˘⟨ C.cancell (sym (ε (L₀ x) .↓Hom.sq) ∙ C.idr _) ⟩
           R.₁ _ C.∘ _ C.∘ α              ≡˘⟨ C.pullr (sym (lift↓ α .↓Hom.sq) ∙ C.idr _) ⟩
           (R.₁ _ C.∘ R.₁ (F₁ L α)) C.∘ α ≡˘⟨ ap (C._∘ α) (R.F-∘ _ _) ⟩
           R.₁ (_ D.∘ F₁ L α) C.∘ α       ∎
-        }) 
+        })
         (record { sq = C.id-comm ∙ ap (C._∘ _) (sym R.F-id) })
     )
     where α = L₀′ x
-          L = universalMaps→L
+          L = universal-maps→L
 ```
 
-<!-- TODO [Amy 2022-02-17]
-Show that L⊣R implies x↙R has an initial object
+## From an adjunction
+
+To finish the correspondence, we show that any (left) adjoint functor $L
+\dashv R$ defines a system of universal arrows $- \swarrow R$; This
+means that, not only does a "universal way of solving $R$" _give_ a left
+adjoint to $R$, it _is_ a left adjoint to $R$.
+
+<!--
+```agda
+module _
+  {L : Functor C D} {R : Functor D C}
+  (adj : L ⊣ R)
+  where
+
+  private
+    import Cat.Functor.Reasoning L as L
+    import Cat.Functor.Reasoning R as R
+    import Cat.Reasoning C as C
+    import Cat.Reasoning D as D
+    module adj = _⊣_ adj
+```
+-->
+
+So, given an object $x \in \ca{C}$, we must find an object $y$ and a
+universal map $x \to R(y)$. Recall that, in the previous section, we
+constructed the left adjoint $L$'s action on objects by using our system
+of universal arrows; Symetrically, in this section, we take the codomain
+to be $y = L(x)$. We must then find an arrow $x \to RLx$, but this is
+exactly the adjunction unit $\eta$!
+
+```agda
+  L⊣R→map-to-R : ∀ x → Precategory.Ob (x ↙ R)
+  L⊣R→map-to-R x .↓Obj.x = tt
+  L⊣R→map-to-R x .↓Obj.y = L.₀ x
+  L⊣R→map-to-R x .↓Obj.map = adj.unit.η _
+```
+
+We must now show that the unit $\eta$ is universal among the pairs $(y,
+f)$, with $f$ a map $x \to R(y)$. Recall that for our object $(Lx,
+\eta)$ to be [initial], we must find an arrow $(y, f) \to (Lx, \eta)$,
+and prove that this is the only possible such arrow; And that morphisms
+in the comma category $x \swarrow R$ break down as maps $g : Lx \to y$ such
+that the triangle below commutes:
+
+[initial]: Cat.Diagram.Initial.html
+
+~~~{.quiver}
+\[\begin{tikzcd}
+  x && RLx \\
+  \\
+  && Ry
+  \arrow["f"', from=1-1, to=3-3]
+  \arrow["\eta", from=1-1, to=1-3]
+  \arrow["Rg", from=1-3, to=3-3]
+\end{tikzcd}\]
+~~~
+
+We can actually read off the map $g$ pretty directly from the diagram:
+It must be a map $Lx \to y$, but we've been given a map $LRx \to x$ (the
+adjunction counit) and a map $x \to Ry$; We may then take our $g$ to be
+the composite
+
+$$
+Lx \to LRy \to y
+$$
+
+```agda
+  L⊣R→map-to-R-is-initial
+    : ∀ x → is-initial (x ↙ R) (L⊣R→map-to-R x)
+  L⊣R→map-to-R-is-initial x other-map .centre .↓Hom.α = tt
+  L⊣R→map-to-R-is-initial x other-map .centre .↓Hom.β =
+    adj.counit.ε _ D.∘ L.₁ (other-map .↓Obj.map)
+  L⊣R→map-to-R-is-initial x other-map .centre .↓Hom.sq =
+    sym (
+      R.₁ (adj.counit.ε _ D.∘ L.₁ om.map) C.∘ adj.unit.η _       ≡⟨ ap₂ C._∘_ (R.F-∘ _ _) refl ∙ sym (C.assoc _ _ _) ⟩
+      R.₁ (adj.counit.ε _) C.∘ R.₁ (L.₁ om.map) C.∘ adj.unit.η _ ≡˘⟨ C.refl⟩∘⟨ adj.unit.is-natural _ _ _ ⟩
+      (R.₁ (adj.counit.ε _) C.∘ adj.unit.η _ C.∘ om.map)         ≡⟨ C.cancell adj.zag ⟩
+      om.map                                                     ≡⟨ sym (C.idr _) ⟩
+      om.map C.∘ C.id                                            ∎
+    )
+    where module om = ↓Obj other-map
+```
+
+Checking that the triangle above commutes is a routine application of
+naturality and the triangle identities; The same is true for proving
+that the map $g$ above is unique.
+
+```agda
+  L⊣R→map-to-R-is-initial x other-map .paths y =
+    ↓Hom-path _ _ refl (
+      adj.counit.ε _ D.∘ L.₁ om.map                            ≡⟨ D.refl⟩∘⟨ L.expand (sym (C.idr _) ∙ y .↓Hom.sq) ⟩
+      adj.counit.ε _ D.∘ L.₁ (R.₁ y.β) D.∘ L.₁ (adj.unit.η _)  ≡⟨ D.pulll (adj.counit.is-natural _ _ _) ⟩ -- nvmd
+      (y.β D.∘ adj.counit.ε _) D.∘ L.₁ (adj.unit.η _)          ≡⟨ D.cancelr adj.zig ⟩
+      y.β                                                      ∎
+    )
+    where
+      module om = ↓Obj other-map
+      module y = ↓Hom y
+```
+
+Hence, we can safely say that having a functor $L$ and an adjunction $L
+\dashv R$ is the same thing as having a functor $R$ and a system of
+universal arrows into $R$:
+
+```
+  L⊣R→universal-maps : ∀ x → Universal-morphism x R
+  L⊣R→universal-maps x .Initial.bot = L⊣R→map-to-R x
+  L⊣R→universal-maps x .Initial.has⊥ = L⊣R→map-to-R-is-initial x
+```
+
+<!-- TODO [Amy 2022-03-02]
+prove that we recover L by going L⊣R → universal maps → L⊣R. this is
+straightforward but I'm tired
+-->
+
+# Adjuncts
+
+Another view on adjunctions, one which is productive when thinking about
+adjoint *endo*functors $L \dashv R$, is the concept of _adjuncts_. Any
+pair of natural transformations _typed like_ a unit and counit allow you
+to pass between the Hom-sets $\hom(La,b)$ and $\hom(a,Rb)$, by composing
+the functorial action of $L$ (resp $R$) with the natural
+transformations:
+
+<!--
+```agda
+module _ {L : Functor C D} {R : Functor D C} (adj : L ⊣ R) where
+  private
+    module L = Func L
+    module R = Func R
+    module C = Cat.Reasoning C
+    module D = Cat.Reasoning D
+    module adj = _⊣_ adj
+```
+-->
+
+```agda
+  L-adjunct : ∀ {a b} → D.Hom (L.₀ a) b → C.Hom a (R.₀ b)
+  L-adjunct f = R.₁ f C.∘ adj.unit.η _
+
+  R-adjunct : ∀ {a b} → C.Hom a (R.₀ b) → D.Hom (L.₀ a) b
+  R-adjunct f = adj.counit.ε _ D.∘ L.₁ f
+```
+
+The important part that the actual data of an adjunction gets you is
+these functions are inverse _equivalences_ between the hom-sets
+$\hom(La,b) \cong \hom(a,Rb)$.
+
+```agda
+  L-R-adjunct : ∀ {a b} → is-right-inverse (R-adjunct {a} {b}) L-adjunct
+  L-R-adjunct f =
+    R.₁ (adj.counit.ε _ D.∘ L.₁ f) C.∘ adj.unit.η _        ≡⟨ R.pushl refl ⟩
+    R.₁ (adj.counit.ε _) C.∘ R.₁ (L.₁ f) C.∘ adj.unit.η _  ≡˘⟨ C.refl⟩∘⟨ adj.unit.is-natural _ _ _ ⟩
+    R.₁ (adj.counit.ε _) C.∘ adj.unit.η _ C.∘ f            ≡⟨ C.cancell adj.zag ⟩
+    f                                                      ∎
+
+  R-L-adjunct : ∀ {a b} → is-left-inverse (R-adjunct {a} {b}) L-adjunct
+  R-L-adjunct f =
+    adj.counit.ε _ D.∘ L.₁ (R.₁ f C.∘ adj.unit.η _)       ≡⟨ D.refl⟩∘⟨ L.F-∘ _ _ ⟩
+    adj.counit.ε _ D.∘ L.₁ (R.₁ f) D.∘ L.₁ (adj.unit.η _) ≡⟨ D.extendl (adj.counit.is-natural _ _ _) ⟩
+    f D.∘ adj.counit.ε _ D.∘ L.₁ (adj.unit.η _)           ≡⟨ D.elimr adj.zig ⟩
+    f                                                     ∎
+
+  L-adjunct-is-equiv : ∀ {a b} → is-equiv (L-adjunct {a} {b})
+  L-adjunct-is-equiv = is-iso→is-equiv
+    (iso R-adjunct L-R-adjunct R-L-adjunct)
+
+  R-adjunct-is-equiv : ∀ {a b} → is-equiv (R-adjunct {a} {b})
+  R-adjunct-is-equiv = is-iso→is-equiv
+    (iso L-adjunct R-L-adjunct L-R-adjunct)
+```
+
+<!--
+```agda
+module _ {L : Functor C D} {R : Functor D C} (adj : L ⊣ R) where
+  private
+    module L = Functor L
+    module R = Functor R
+    module C = Cat.Reasoning C
+    module D = Cat.Reasoning D
+    module adj = _⊣_ adj
+
+  open _⊣_
+  open _=>_
+
+  opposite-adjunction : R.op ⊣ L.op
+  opposite-adjunction .unit .η _ = adj.counit.ε _
+  opposite-adjunction .unit .is-natural x y f = sym (adj.counit.is-natural _ _ _)
+  opposite-adjunction .counit .η _ = adj.unit.η _
+  opposite-adjunction .counit .is-natural x y f = sym (adj.unit.is-natural _ _ _)
+  opposite-adjunction .zig = adj.zag
+  opposite-adjunction .zag = adj.zig
+```
 -->

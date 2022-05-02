@@ -22,29 +22,29 @@ open _⊣_
 ```
 -->
 
-# StrictCat is "cohesive"
+# Strict-Cat is "cohesive"
 
 We prove that the category $\strcat$ admits an adjoint
 quadruple
 
 $$
-\Pi_0 \dashv \mathrm{Disc} \dashv \Gamma \dashv \mathrm{Codisc} 
+\Pi_0 \dashv \id{Disc} \dashv \Gamma \dashv \id{Codisc}
 $$
 
 where the "central" adjoint $\Gamma$ is the functor which sends a strict
 category to its underlying set of objects. This lets us treat categories
-as giving a kind of "spatial" structure over $\mathrm{Sets}$.  The left-
-and right- adjoints to $\mathrm{Ob}$ equip sets with the "discrete" and
+as giving a kind of "spatial" structure over $\id{Sets}$.  The left-
+and right- adjoints to $\id{Ob}$ equip sets with the "discrete" and
 "codiscrete" spatial structures, where nothing is stuck together, or
 everything is stuck together.
 
-The extra right adjoint to $\mathrm{Ob}$ assigns a category to its set
+The extra right adjoint to $\id{Ob}$ assigns a category to its set
 of connected components, which can be thought of as the "pieces" of the
 category. Two objects land in the same connected component if there is a
 path of morphisms connecting them, hence the name.
 
 **Note**: Generally, the term "cohesive" is applied to Grothendieck
-topoi, which `StrictCat`{.Agda} is _very far_ from being. We're using it
+topoi, which `Strict-Cat`{.Agda} is _very far_ from being. We're using it
 here by analogy: There's an adjoint quadruple, where the functor
 $\Gamma$ sends each category to its set of points: see [the last
 section]. Strictly speaking, the left adjoint to $\Gamma$ isn't defined
@@ -58,7 +58,7 @@ sending $S$ to the coproduct of $S$-many copies of the point category.
 We begin by defining the object set functor.
 
 ```agda
-Γ : Functor (StrictCat o h) (Sets o)
+Γ : Functor (Strict-Cat o h) (Sets o)
 Γ .F₀ (C , obset) = Ob C , obset
 Γ .F₁ = F₀
 Γ .F-id = refl
@@ -71,11 +71,11 @@ functor `Γ`{.Agda} we defined above. Then we define the adjunction
 `Disc⊣Γ`{.Agda}.
 
 ```agda
-Disc : Functor (Sets ℓ) (StrictCat ℓ ℓ)
-Disc .F₀ S = Disc′ S , S .snd
-Disc .F₁ = liftDisc
-Disc .F-id = Functor≡ (λ x → refl) λ f → refl
-Disc .F-∘ _ _ = Functor≡ (λ x → refl) λ f → refl
+Disc : Functor (Sets ℓ) (Strict-Cat ℓ ℓ)
+Disc .F₀ S = Disc′ S , S .is-tr
+Disc .F₁ = lift-disc
+Disc .F-id = Functor-path (λ x → refl) λ f → refl
+Disc .F-∘ _ _ = Functor-path (λ x → refl) λ f → refl
 
 Disc⊣Γ : Disc {ℓ} ⊣ Γ
 Disc⊣Γ = adj where
@@ -84,15 +84,15 @@ Disc⊣Γ = adj where
 <!--
 ```agda
   abstract
-    lemma : ∀ {A : StrictCat ℓ ℓ .Precategory.Ob} 
+    lemma : ∀ {A : Strict-Cat ℓ ℓ .Precategory.Ob}
               {x y z : A .fst .Precategory.Ob} (f : y ≡ z) (g : x ≡ y)
           → subst (A .fst .Precategory.Hom _) (g ∙ f) (A .fst .Precategory.id)
-          ≡ A .fst .Precategory._∘_ 
+          ≡ A .fst .Precategory._∘_
             (subst (A .fst .Precategory.Hom _) f (A .fst .Precategory.id))
             (subst (A .fst .Precategory.Hom _) g (A .fst .Precategory.id))
-    lemma {A = A} {x = x} = 
-      J′ (λ y z f → (g : x ≡ y) → subst (X.Hom _) (g ∙ f) X.id 
-                  ≡ subst (X.Hom _) f X.id X.∘ subst (X.Hom _) g X.id) 
+    lemma {A = A} {x = x} =
+      J′ (λ y z f → (g : x ≡ y) → subst (X.Hom _) (g ∙ f) X.id
+                  ≡ subst (X.Hom _) f X.id X.∘ subst (X.Hom _) g X.id)
         λ x g → (subst-∙ (X.Hom _) g refl _ ·· transport-refl _ ·· sym (X.idl _))
               ∙ ap₂ X._∘_ (sym (transport-refl _)) refl
       where module X = Precategory (A .fst)
@@ -101,23 +101,23 @@ Disc⊣Γ = adj where
 
 For the adjunction `unit`{.Agda}, we're asked to provide a natural
 transformation from the identity functor to $\Gamma \circ
-\mathrm{Disc}$; Since the object set of $\mathrm{Disc}(X)$ is simply
+\id{Disc}$; Since the object set of $\id{Disc}(X)$ is simply
 $X$, the identity map suffices:
 
 ```agda
-  adj : _ ⊣ _
+  adj : Disc {ℓ} ⊣ Γ
   adj .unit   = NT (λ _ x → x) λ x y f i o → f o
 ```
 
 The adjunction counit is slightly more complicated, as we have to give a
-functor $\mathrm{Disc}(\Gamma(X)) \to X$, naturally in $X$. Since
+functor $\id{Disc}(\Gamma(X)) \to X$, naturally in $X$. Since
 morphisms in discrete categories are paths, for a map $x \equiv y$ (in
 `{- 1 -}`{.Agda}), it suffices to assume $y$ really is $x$, and so the
 identity map suffices.
 
 ```agda
   adj .counit = NT (λ x → F x) nat where
-    F : (x : Precategory.Ob (StrictCat ℓ ℓ)) 
+    F : (x : Precategory.Ob (Strict-Cat ℓ ℓ))
       → Functor (Disc′ (x .fst .Precategory.Ob , x .snd)) _
     F X .F₀ x = x
     F X .F₁ p = subst (X .fst .Hom _) p (X .fst .id) {- 1 -}
@@ -128,15 +128,15 @@ identity map suffices.
 <!--
 ```agda
     abstract
-      nat : (x y : Precategory.Ob (StrictCat ℓ ℓ)) 
-            (f : Precategory.Hom (StrictCat ℓ ℓ) x y)
+      nat : (x y : Precategory.Ob (Strict-Cat ℓ ℓ))
+            (f : Precategory.Hom (Strict-Cat ℓ ℓ) x y)
           → (F y F∘ F₁ (Disc F∘ Γ) f) ≡ (f F∘ F x)
-      nat x y f = 
-        Functor≡ (λ x → refl) 
-           (J′ (λ x y p → subst (Y.Hom _) (ap (F₀ f) p) Y.id 
-                        ≡ F₁ f (subst (X.Hom _) p X.id)) 
-               λ _ → transport-refl _ 
-                  ·· sym (F-id f) 
+      nat x y f =
+        Functor-path (λ x → refl)
+           (J′ (λ x y p → subst (Y.Hom _) (ap (F₀ f) p) Y.id
+                        ≡ F₁ f (subst (X.Hom _) p X.id))
+               λ _ → transport-refl _
+                  ·· sym (F-id f)
                   ·· ap (F₁ f) (sym (transport-refl _)))
          where
            module X = Precategory (x .fst)
@@ -147,7 +147,7 @@ identity map suffices.
 Fortunately the triangle identities are straightforwardly checked.
 
 ```agda
-  adj .zig {x} = Functor≡ (λ x i → x) λ f → x .snd _ _ _ _
+  adj .zig {x} = Functor-path (λ x i → x) λ f → x .is-tr _ _ _ _
   adj .zag = refl
 ```
 
@@ -160,16 +160,16 @@ lift functions to act on object parts and the action on morphisms is
 trivial.
 
 ```agda
-Codisc : Functor (Sets ℓ) (StrictCat ℓ ℓ)
-Codisc .F₀ (S , sset) = Codisc′ S , sset
+Codisc : Functor (Sets ℓ) (Strict-Cat ℓ ℓ)
+Codisc .F₀ S = Codisc′ ∣ S ∣ , S .is-tr
 
 Codisc .F₁ f .F₀ = f
 Codisc .F₁ f .F₁ = λ _ → lift tt
 Codisc .F₁ f .F-id = refl
 Codisc .F₁ f .F-∘ = λ _ _ → refl
 
-Codisc .F-id    = Functor≡ (λ x → refl) λ f → refl
-Codisc .F-∘ _ _ = Functor≡ (λ x → refl) λ f → refl
+Codisc .F-id    = Functor-path (λ x → refl) λ f → refl
+Codisc .F-∘ _ _ = Functor-path (λ x → refl) λ f → refl
 ```
 
 The codiscrete category functor is right adjoint to the object set
@@ -180,13 +180,13 @@ both directions:
 Γ⊣Codisc : Γ ⊣ Codisc {ℓ}
 Γ⊣Codisc = adj where
   adj : _ ⊣ _
-  adj .unit = 
-    NT (λ x → record { F₀ = λ x → x ; F₁ = λ _ → lift tt 
-                     ; F-id = refl ; F-∘ = λ _ _ → refl }) 
-       λ x y f → Functor≡ (λ _ → refl) λ _ → refl
+  adj .unit =
+    NT (λ x → record { F₀ = λ x → x ; F₁ = λ _ → lift tt
+                     ; F-id = refl ; F-∘ = λ _ _ → refl })
+       λ x y f → Functor-path (λ _ → refl) λ _ → refl
   adj .counit = NT (λ _ x → x) λ x y f i o → f o
   adj .zig = refl
-  adj .zag = Functor≡ (λ _ → refl) λ _ → refl
+  adj .zag = Functor-path (λ _ → refl) λ _ → refl
 ```
 
 ## Object set vs global sections
@@ -205,14 +205,14 @@ $\hom$-sets are definitionally contractible.
 
 ```agda
 module _ {ℓ} where
-  import Cat.Morphism Cat[ StrictCat ℓ ℓ , Sets ℓ ] as Nt
+  import Cat.Morphism Cat[ Strict-Cat ℓ ℓ , Sets ℓ ] as Nt
 
-  GlobalSections : Functor (StrictCat ℓ ℓ) (Sets ℓ)
-  GlobalSections .F₀ C = 
-    Functor (Codisc′ (Lift _ ⊤)) (C .fst) , isSet-Functor (C .snd)
+  GlobalSections : Functor (Strict-Cat ℓ ℓ) (Sets ℓ)
+  GlobalSections .F₀ C =
+    Functor (Codisc′ (Lift _ ⊤)) (C .fst) , Functor-is-set (C .snd)
   GlobalSections .F₁ G F = G F∘ F
-  GlobalSections .F-id = funext λ _ → Functor≡ (λ _ → refl) λ _ → refl
-  GlobalSections .F-∘ f g = funext λ _ → Functor≡ (λ _ → refl) λ _ → refl
+  GlobalSections .F-id = funext λ _ → Functor-path (λ _ → refl) λ _ → refl
+  GlobalSections .F-∘ f g = funext λ _ → Functor-path (λ _ → refl) λ _ → refl
 ```
 
 Since `GlobalSections`{.Agda} is a section of the $\hom$ functor, it
@@ -220,7 +220,7 @@ acts on maps by composition. The functor identities hold definitionally.
 
 ```agda
   GlobalSections≅Γ : Γ {ℓ} Nt.≅ GlobalSections
-  GlobalSections≅Γ = Nt.makeIso f g f∘g g∘f where
+  GlobalSections≅Γ = Nt.make-iso f g f∘g g∘f where
     open Precategory
 ```
 
@@ -231,18 +231,18 @@ essentially independent of the coordinate.
 
 ```agda
     f : Γ => GlobalSections
-    f .η x ob = 
-      record { F₀ = λ _ → ob ; F₁ = λ _ → x .fst .id 
-             ; F-id = refl ; F-∘ = λ _ _ → sym (x .fst .idl _) 
+    f .η x ob =
+      record { F₀ = λ _ → ob ; F₁ = λ _ → x .fst .id
+             ; F-id = refl ; F-∘ = λ _ _ → sym (x .fst .idl _)
              }
-    f .is-natural x y f = funext λ _ → Functor≡ (λ _ → refl) λ _ → sym (F-id f)
+    f .is-natural x y f = funext λ _ → Functor-path (λ _ → refl) λ _ → sym (F-id f)
 ```
 
 In the opposite direction, the natural transformation is defined by
 evaluating at the point. These natural transformations compose to the
 identity almost definitionally, but Agda does need some convincing,
 using our path helpers: `Nat-path`{.Agda}, `funext`{.Agda}, and
-`Functor≡`{.Agda}.
+`Functor-path`{.Agda}.
 
 ```agda
     g : GlobalSections => Γ
@@ -250,7 +250,7 @@ using our path helpers: `Nat-path`{.Agda}, `funext`{.Agda}, and
     g .is-natural x y f = refl
 
     f∘g : f ∘nt g ≡ idnt
-    f∘g = Nat-path λ c → funext λ x → Functor≡ (λ x → refl) λ f → sym (F-id x)
+    f∘g = Nat-path λ c → funext λ x → Functor-path (λ x → refl) λ f → sym (F-id x)
 
     g∘f : g ∘nt f ≡ idnt
     g∘f = Nat-path λ _ i x → x
@@ -270,16 +270,16 @@ connected. This is intentional!
 ```
 
 The `π₀`{.Agda} construction extends to a functor `Π₀`{.Agda} (capital
-pi for **P**ieces) from `StrictCat`{.Agda} back to `Sets`{.Agda}. We
+pi for **P**ieces) from `Strict-Cat`{.Agda} back to `Sets`{.Agda}. We
 send a functor $F$ to its object part, but postcomposing with the map
 `inc`{.Agda} which sends an object of $\ca{D}$ to the connected
 component it inhabits.
 
 ```agda
-Π₀ : Functor (StrictCat o h) (Sets (o ⊔ h))
+Π₀ : Functor (Strict-Cat o h) (Sets (o ⊔ h))
 Π₀ .F₀ (C , _) = π₀ C
-Π₀ .F₁ F = 
-  Quot-elim (λ _ → squash) (λ x → inc (F₀ F x)) 
+Π₀ .F₁ F =
+  Quot-elim (λ _ → squash) (λ x → inc (F₀ F x))
     λ x y r → glue (_ , _ , F₁ F r)
 ```
 
@@ -291,12 +291,12 @@ component, we must give a map $F_0(x) \to F_0(y)$, but this can be
 canonically chosen to be $F_1(r)$.
 
 ```agda
-Π₀ .F-id    = funext (Coeq-elimProp (λ _ → squash _ _) λ x → refl)
-Π₀ .F-∘ f g = funext (Coeq-elimProp (λ _ → squash _ _) λ x → refl)
+Π₀ .F-id    = funext (Coeq-elim-prop (λ _ → squash _ _) λ x → refl)
+Π₀ .F-∘ f g = funext (Coeq-elim-prop (λ _ → squash _ _) λ x → refl)
 ```
 
 The adjunction `unit`{.Agda} is a natural assignment of functors $\ca{X}
-\to \mathrm{Disc}(\Pi_0(\ca{X}))$. We send $x$ to its connected
+\to \id{Disc}(\Pi_0(\ca{X}))$. We send $x$ to its connected
 component, and we must send a map $r : x \to y$ to an equality between
 the connected components of $x$ and $y$; But we get this from the
 quotient.
@@ -305,30 +305,30 @@ quotient.
 Π₀⊣Disc : Π₀ ⊣ Disc {ℓ}
 Π₀⊣Disc = adj where
   adj : _ ⊣ _
-  adj .unit .η x = record 
+  adj .unit .η x = record
     { F₀   = inc            ; F₁ = quot
-    ; F-id = squash _ _ _ _ ; F-∘ = λ _ _ → squash _ _ _ _ 
+    ; F-id = squash _ _ _ _ ; F-∘ = λ _ _ → squash _ _ _ _
     }
-  adj .unit .is-natural x y f = Functor≡ (λ x → refl) λ _ → squash _ _ _ _
+  adj .unit .is-natural x y f = Functor-path (λ x → refl) λ _ → squash _ _ _ _
 ```
 
 The adjunction `counit`{.Agda} is an assignment of functions
-$\Pi_0(\mathrm{Disc}(X)) \to X$. This is essentially a natural
+$\Pi_0(\id{Disc}(X)) \to X$. This is essentially a natural
 isomorphism: the set of connected components of a discrete category is
 the same set we started with.
 
 ```agda
-  adj .counit .η (X , s) = Quot-elim (λ _ → s) (λ x → x) λ x y r → r
-  adj .counit .is-natural x (y , ys) f = 
-    funext (Coeq-elimProp (λ _ → ys _ _) λ _ → refl)
+  adj .counit .η X = Quot-elim (λ _ → X .is-tr) (λ x → x) λ x y r → r
+  adj .counit .is-natural x y f =
+    funext (Coeq-elim-prop (λ _ → y .is-tr _ _) λ _ → refl)
 ```
 
 The triangle identities are again straightforwardly checked.
 
 ```agda
-  adj .zig {x} = funext (Coeq-elimProp (λ _ → squash _ _) λ x → refl)
+  adj .zig {x} = funext (Coeq-elim-prop (λ _ → squash _ _) λ x → refl)
 
-  adj .zag = Functor≡ (λ x → refl) λ f → refl
+  adj .zag = Functor-path (λ x → refl) λ f → refl
 ```
 
 Furthermore, we can prove that the connected components of a product
@@ -336,9 +336,9 @@ category are product sets of connected components.
 
 ```agda
 Π₀-preserve-prods
-  : ∀ {C D : Precategory o h} → π₀ (C ×Cat D) .fst ≡ (π₀ C .fst × π₀ D .fst)
-Π₀-preserve-prods {C = C} {D = D} = Iso→path (f , isom) where
-  open isIso
+  : ∀ {C D : Precategory o h} → ∣ π₀ (C ×Cat D) ∣ ≡ (∣ π₀ C ∣ × ∣ π₀ D ∣)
+Π₀-preserve-prods {C = C} {D = D} = Iso→Path (f , isom) where
+  open is-iso
 ```
 
 We have a map splitting $\pi_0$ of the product category onto $\pi_0$ of
@@ -346,30 +346,30 @@ each factor. This maps respect the quotient because we can also split
 the morphisms.
 
 ```agda
-  f : π₀ (C ×Cat D) .fst → π₀ C .fst × π₀ D .fst
-  f = Quot-elim 
-    (λ _ → isHLevel× 2 squash squash) 
-    (λ (a , b) → inc a , inc b) 
-    λ (x , x') (y , y') (f , g) i → 
+  f : ∣ π₀ (C ×Cat D) ∣ → ∣ π₀ C ∣ × ∣ π₀ D ∣
+  f = Quot-elim
+    (λ _ → ×-is-hlevel 2 squash squash)
+    (λ (a , b) → inc a , inc b)
+    λ (x , x') (y , y') (f , g) i →
       glue (x , y , f) i , glue (x' , y' , g) i
 ```
 
 This map has an inverse given by joining up the pairs:
 
 ```agda
-  isom : isIso f
-  isom .inv (a , b) = Coeq-rec₂ squash (λ x y → inc (x , y)) 
-    (λ a (x , y , r) i → glue ((x , a) , (y , a) , r , Precategory.id D) i) 
-    (λ a (x , y , r) i → glue ((a , x) , (a , y) , Precategory.id C , r) i) 
+  isom : is-iso f
+  isom .inv (a , b) = Coeq-rec₂ squash (λ x y → inc (x , y))
+    (λ a (x , y , r) i → glue ((x , a) , (y , a) , r , Precategory.id D) i)
+    (λ a (x , y , r) i → glue ((a , x) , (a , y) , Precategory.id C , r) i)
     a b
 
-  isom .rinv (a , b) = Coeq-elimProp₂ 
-    {C = λ x y → f (isom .inv (x , y)) ≡ (x , y)} 
-    (λ _ _ → isHLevel× 2 squash squash _ _) 
-    (λ _ _ → refl) 
+  isom .rinv (a , b) = Coeq-elim-prop₂
+    {C = λ x y → f (isom .inv (x , y)) ≡ (x , y)}
+    (λ _ _ → ×-is-hlevel 2 squash squash _ _)
+    (λ _ _ → refl)
     a b
 
-  isom .linv = Coeq-elimProp (λ _ → squash _ _) λ _ → refl
+  isom .linv = Coeq-elim-prop (λ _ → squash _ _) λ _ → refl
 ```
 
 ## Pieces have points
@@ -384,5 +384,5 @@ Points→Pieces .η _ x = inc x
 Points→Pieces .is-natural x y f i o = inc (F₀ f o)
 
 pieces-have-points : ∀ {x} y → ∥ fibre (Points→Pieces {ℓ} .η x) y ∥
-pieces-have-points = Coeq-elimProp (λ _ → squash) λ x → inc (x , refl)
+pieces-have-points = Coeq-elim-prop (λ _ → squash) λ x → inc (x , refl)
 ```

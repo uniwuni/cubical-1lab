@@ -2,19 +2,21 @@
 module index where
 ```
 
-# Cubical 1lab {style="margin-top: 0;"}
+# 1lab {style="margin-top: 0;"}
 
-A formalised, cross-linked reference resource for mathematics done in
+A formalised, cross-linked reference resource for cubical methods in
 Homotopy Type Theory. Unlike the [HoTT book], the 1lab is not a "linear"
 resource: Concepts are presented as a directed graph, with links
 indicating _dependencies_. For instance, the statement of the univalence
-principle depends on [_universes_](agda://1Lab.Type),
-[_identifications_](agda://1Lab.Path) and
-[_equivalences_](agda://1Lab.Equiv).  In addition to the hyperlinked
-"web of concepts" provided by the Agda code, there is a short
-introduction to homotopy type theory: **[Start here](1Lab.intro.html)**.
+principle depends on [universes], [identifications] and [equivalences].
+In addition to the hyperlinked "web of concepts" provided by the Agda
+code, there is a short introduction to homotopy type theory: **[Start
+here](1Lab.intro.html)**.
 
 [HoTT book]: https://homotopytypetheory.org/book/
+[universes]: agda://1Lab.Type
+[identifications]: agda://1Lab.Path
+[equivalences]: agda://1Lab.Equiv
 
 <!--
 ```agda
@@ -27,73 +29,41 @@ open import 1Lab.HLevel
 -->
 
 ```agda
-_ : ∀ {ℓ} {A B : Type ℓ} → isEquiv (pathToEquiv {A = A} {B})
+_ : ∀ {ℓ} {A B : Type ℓ} → is-equiv (path→equiv {A = A} {B})
 _ = univalence
 ```
 
-If you don't know what those concepts refer to, it could be challenging
-to figure out what the definition above is even saying - or how it's
-proven. Fortunately, every single text element there is a link! Try
-clicking on the word `isEquiv`{.Agda} - either here in the text, or
-there in the code. It'll take you to the definition, which will be
-highlighted in orange to draw your attention.
+The purpose of the "web of concepts" approach is to let each reader
+approach the 1lab at their own pace: If you already know what all of the
+code above means, you can click on `univalence`{.Agda} to be taken
+directly to the construction of the equivalence --- but if you _don't_,
+you can click on other definitions like `is-equiv`{.Agda} and
+`path→equiv`{.Agda}, and in turn explore the dependencies of _those_
+concepts, and so on.
 
-Links are colour-coded to indicate what they point to. In body text,
-links rendered in [blue (or purple) sans-serif font](index.html) link to
-_pages_; Links rendered in one of the syntax highlighting colours and
-`monospace`{.agda ident=Category} link to a _definition_. Specifically,
-the following colours are used:
+The 1lab is a community project: we use [GitHub] for source control and
+talk on [Discord]. Our purpose is to make cubical methods in homotopy
+type theory accessible to, and inclusive of, everyone who is interested,
+regardless of cultural background, age, ability, ethnicity, gender
+identity, or expression. Correspondingly, interactions in those forums
+are governed by the [Contributor Covenant Code of Conduct][cccc]. **We
+believe HoTT is for everyone, and are committed to fostering a kind,
+inclusive environment.**
 
-* Blue for records and functions: `isEquiv`{.Agda}, `sym`{.agda}
+[GitHub]: https://github.com/plt-amy/1lab
+[Discord]: https://discord.gg/NvXkUVYcxV
+[cccc]: https://github.com/plt-amy/1lab/blob/main/CODE_OF_CONDUCT.md
 
-* Green for inductive constructors, coinductive constructors, and the
-endpoints of the interval: `i0`{.agda}
+Mathematics is, fundamentally, a social activity. Correspondingly, we
+have a page dedicated to letting authors introduce and talk a bit
+themselves and their other work:
 
-* Maroon for modules: `1Lab.Type`{.Agda}
-
-* Purple for record selectors: `isEqv`{.agda ident="isEquiv.isEqv"}
-
-<!--
-```agda
-_ = i0
-_ = isEquiv
-_ = isEquiv.isEqv
-_ = sym
-```
--->
-
-## About
-
-The 1lab is an [open-source] project with the goal of making formalised
-mathematics, and especially formalised mathematics done in Homotopy Type
-Theory, accessible to as wide as audience as possible. In addition to
-the hyperlinked "web of concepts" provided by the Agda code, there is a
-short introduction to homotopy type theory: **[Start
-here](1Lab.intro.html)**.
-
-[open-source]: https://github.com/plt-amy/cubical-1lab
-
-Contributions are, of course, welcome! If you need help getting set up,
-want to discuss a contribution, or just ask a question, [join our
-Discord server]! If you don't feel like your contribution merits a pull
-request (i.e.: it's just fixing a typo), it's fine to just mention it on
-the server and I'll see that it gets addressed as soon as possible.
-
-[join our Discord server]: https://discord.gg/NvXkUVYcxV
-
-Since this website is about mathematics, and mathematics is done by
-people, there is a page where contributors can write short profiles
-about themselves: Keeping with the theme, it's an Agda module:
-`Authors`{.Agda} (there isn't any code there, though!)
-
-<!--
 ```agda
 open import Authors
 ```
--->
 
-It'd be very unfair of me not to mention other resources that could be
-helpful for learning about Homotopy Type Theory:
+Similarly, we maintain this list of related resources which serve as an
+introduction to HoTT in general:
 
 * The “canonical” reference is [the HoTT Book], written by a
 variety of mathematicians at the IAS Special Year for Univalent
@@ -127,55 +97,37 @@ Mathematics with Agda].
 
 [Introduction to Univalent Foundations of Mathematics with Agda]: https://www.cs.bham.ac.uk/~mhe/HoTT-UF-in-Agda-Lecture-Notes/HoTT-UF-Agda.html
 
-With those two references in mind, the 1lab aims to:
+* Prof. Favonia has kindly uploaded the outline, videos and lecture
+notes for their 2020 course on higher-dimensional type theory, which
+also serves as an introduction to cubical methods in homotopy type
+theory, aimed at graduate students. You can find the course page
+[here](https://favonia.org/courses/hdtt2020/), the videos [here on their
+YouTube](https://www.youtube.com/playlist?list=PL0OBHndHAAZrGQEkOZGyJu7S7KudAJ8M9),
+and the notes [here](https://github.com/favonia/hdtt2020-notes/) (though
+heed the warning in the README).
 
-* Provide a comprehensibly documented example of mathematics done in
-HoTT, formalised entirely in safe[^1] Cubical Agda, for other students
-of homotopy type theory to consult. This doesn't bring anything new to
-the table for HoTT: Many, if not most, of the theorems in the book were
-already formalised in Coq.
+* Another comprehensive, formalised Agda resource is the [agda-unimath]
+project, though unlike us (and like prof. Escardó's lecture notes) they
+make use of _axiomatic_ HoTT: Univalence is a postulate, and thus does
+not have computational content.
 
-[^1]: The 1lab is not compiled with `--safe` because some modules
-explicitly assume inconsistent principles with the goal of providing
-_counterexamples_. For instance, to formalise how [type-in-type leads to
-Russell's paradox], we need to enable type-in-type!
+  Regardless, they have formalised a great deal of "ordinary"
+  mathematics in the univalent context: elementary number theory, group
+  theory and combinatorics being the most prominent projects.
 
-[type-in-type leads to Russell's paradox]: 1Lab.Counterexamples.Russell.html
-
-* Provide an introduction to HoTT as it's done in Cubical Type Theory to
-those who are already familiar with "Book HoTT". There are significant
-differences, including, but very much not limited to, univalence having
-computational content!
-
-* Do both of these in a _discoverable_ manner:
-
-  * All Agda identifiers are
-  cross-linked (this is an Agda feature and requires no effort on my
-  part);
-
-  * Concepts are linked to the first time they are used in a
-  page[^2];
-
-  * Diagrams are employed where appropriate, and there is
-  infrastructure in place to make this easy to do;
-
-  * Definitions are done in multiple ways, when appropriate, so it is
-  possible to compare different approaches.
-
-[^2]: If you encounter a case where this isn't true, please do not
-hesitate to contribute!
-
-Again, I want to stress that _the 1lab is free and open-source
-software_. If you feel like _any_ of the goals above are not being
-achieved, [submit a merge request]!
-
-[submit a merge request]: https://github.com/plt-amy/cubical-1lab/pulls
+[agda-unimath]: https://unimath.github.io/agda-unimath/
 
 ## Technology
 
 The 1Lab uses [Iosevka](https://typeof.net/Iosevka/) as its monospace
 typeface. Iosevka is licensed under the SIL Open Font License, v1.1, a
-copy of which can be found [here](/static/licenses/LICENSE.Iosevka).
+copy of which can be found [here](/static/licenses/LICENSE.Iosevka). As
+the sans-serif typeface, we use the [Inria Sans] webfont, and as a serif
+typeface, [EB Garamond]. These fonts are both open-source, though rather
+than rehosting them, we use them from Google Fonts.
+
+[Inria Sans]: https://fonts.google.com/specimen/Inria+Sans
+[EB Garamond]: https://fonts.google.com/specimen/EB+Garamond
 
 Mathematics is rendered using [KaTeX](https://katex.org), and as so, the
 1Lab redistributes KaTeX's fonts and stylesheets, even though the
@@ -237,8 +189,8 @@ open import 1Lab.HLevel.Universe -- The type of n-types is a (n+1)-type
 
 open import 1Lab.Univalence            -- Equivalence is equivalent to identification
 open import 1Lab.Univalence.SIP        -- Univalence + preservation of structure
-open import 1Lab.Univalence.SIP.Auto   -- Derive isUnivalent for families of types
-open import 1Lab.Univalence.SIP.Record -- Derive isUnivalent for record types
+open import 1Lab.Univalence.SIP.Auto   -- Derive is-univalent for families of types
+open import 1Lab.Univalence.SIP.Record -- Derive is-univalent for record types
 
 open import 1Lab.Type.Dec   -- Decidable types, discrete types
 open import 1Lab.Type.Pi    -- Properties of dependent products
@@ -251,7 +203,7 @@ open import 1Lab.HIT.Sinfty     -- The infinity-dimensional sphere
 open import 1Lab.HIT.Suspension -- The suspension operation
 open import 1Lab.HIT.Truncation -- Propositional truncation
 
-open import 1Lab.Counterexamples.IsIso   -- Counterexample: isIso is not a prop
+open import 1Lab.Counterexamples.IsIso   -- Counterexample: is-iso is not a prop
 open import 1Lab.Counterexamples.Russell -- Counterexample: Russell's paradox
 open import 1Lab.Counterexamples.Sigma   -- Counterexample: Sigma is not prop
 ```
@@ -274,17 +226,210 @@ open import Data.Power.Lattice   -- Power sets form a lattice
 open import Data.Set.Coequaliser -- Set coequalisers
 ```
 
-<!--
-# Relation
+# Category Theory
 
-Here, we define often-used types of relations like partial orders as well as
-actual relations themselves, for example, lexicographic orderings on lists.
+In addition to providing a framework for the synthetic study of higher
+groupoids, HoTT also provides a natural place to develop constructive,
+predicative category theory, while still being compatible with
+classicality principles like the axiom of choice and/or the law of
+excluded middle. Here, we do not assume any classicality principles.
+
+## Basics
+
+The main modules in the `Cat` namespace provide the foundation for the
+rest of the development, defining basic constructions like precategories
+themselves, functors, natural transformations, etc.
 
 ```agda
-open import Relation.Order               -- Prop-valued ordering relations
-open import Relation.Order.Lexicographic -- Lexicographic orderings
+open import Cat.Base      -- Precategories, functors, natural transformations
+open import Cat.Solver    -- Automatic solver for associativity problems
+open import Cat.Morphism  -- Important classes of morphisms
+open import Cat.Reasoning -- Categorical reasoning combinators
 ```
--->
+
+### Diagrams
+
+For convenience, we define a plethora of "concrete" universal diagrams,
+unpacking their definitions as limits or colimits. These are simpler to
+work with since they provide the relevant data with fewer layers of
+indirection.
+
+```agda
+open import Cat.Diagram.Congruence -- Internal equivalence relations
+
+-- Colimits:
+open import Cat.Diagram.Initial                -- Initial objects
+open import Cat.Diagram.Pushout                -- Pushouts
+open import Cat.Diagram.Coproduct              -- Binary coproducts
+open import Cat.Diagram.Coequaliser            -- Coequalisers
+open import Cat.Diagram.Colimit.Base           -- Conical colimits
+open import Cat.Diagram.Coproduct.Indexed      -- Indexed coproducts
+open import Cat.Diagram.Coequaliser.RegularEpi -- Regular epimorphisms
+
+open import Cat.Diagram.Duals -- Dualisation of co/limits
+open import Cat.Diagram.Image -- Image factorisations
+open import Cat.Diagram.Idempotent -- Idempotent morphisms
+
+-- Limits
+open import Cat.Diagram.Product                -- Binary products
+open import Cat.Diagram.Pullback               -- Fibred products
+open import Cat.Diagram.Terminal               -- Terminal objects
+open import Cat.Diagram.Equaliser              -- Equalisers
+open import Cat.Diagram.Limit.Base             -- Conical limits
+open import Cat.Diagram.Limit.Finite
+open import Cat.Diagram.Limit.Product
+open import Cat.Diagram.Limit.Pullback
+open import Cat.Diagram.Limit.Equaliser
+open import Cat.Diagram.Product.Indexed
+open import Cat.Diagram.Equaliser.Kernel       -- Kernels
+open import Cat.Diagram.Pullback.Properties    -- Properties of fibred products
+open import Cat.Diagram.Equaliser.RegularMono  -- Regular monomorphisms
+
+open import Cat.Diagram.Monad        -- Monads
+open import Cat.Diagram.Monad.Limits -- Limits in Eilenberg-Moore categories
+
+open import Cat.Diagram.Zero -- Zero objects
+```
+
+## Functors
+
+This namespace has definitions of properties functors can have, utility
+modules for working with functors, the definition of full subcategories,
+and adjoint functors.
+
+```agda
+open import Cat.Functor.Hom -- Hom functor, Yoneda embedding, Coyoneda lemma
+open import Cat.Functor.Base -- Compendium of functor properties
+open import Cat.Functor.Pullback -- Base change, dependent sum, Σf ⊣ f*
+open import Cat.Functor.Bifunctor -- Functors out of product categories
+open import Cat.Functor.Equivalence -- Equivalences of (pre)categories
+open import Cat.Functor.Conservative -- Functors which reflect isomorphisms
+open import Cat.Functor.FullSubcategory -- Full subcategories
+open import Cat.Functor.Equivalence.Complete -- Completeness respects equivalence
+```
+
+About adjoint functors, and their associated monads:
+
+```agda
+open import Cat.Diagram.Monad   -- Definition of monads
+open import Cat.Functor.Adjoint -- Unit-counit adjunctions and universal arrows
+open import Cat.Functor.Adjoint.Monad -- Monad from an adjunction
+open import Cat.Functor.Adjoint.Monadic -- Monadic adjunctions
+open import Cat.Functor.Adjoint.Compose -- Adjunctions compose
+open import Cat.Functor.Adjoint.Continuous -- Right adjoints preserve limits
+open import Cat.Functor.Adjoint.Reflective -- Reflective subcategories
+```
+
+About Kan extensions:
+
+```agda
+open import Cat.Functor.Kan -- Kan extensions
+open import Cat.Functor.Kan.Nerve -- The nerve/realisation adjunction (Lan along よ)
+```
+
+## Univalent categories
+
+In HoTT/UF, the word "category" is reserved for the precategories (what
+the rest of the world refers to as just "category") in which isomorphic
+objects are indistinguishable, i.e. the categories which satisfy a
+version of the univalence axiom. Sometimes we also refer to these as
+"univalent categories" to make the distinction clear.
+
+```agda
+open import Cat.Univalent      -- Basic properties of categories
+open import Cat.Univalent.Rezk -- Free category on a precategory
+open import Cat.Univalent.Instances.Algebra
+  -- Eilenberg-Moore categories preserve univalence
+```
+
+## Category instances
+
+Here's where we actually build some categories and prove that they have
+desirable properties.
+
+```agda
+-- Comma categories:
+open import Cat.Instances.Comma
+open import Cat.Instances.Comma.Univalent
+
+open import Cat.Instances.Delooping -- Delooping a monoid to give a category
+open import Cat.Instances.Discrete -- Discrete categories
+open import Cat.Instances.Elements -- Category of elements of a presheaf
+
+-- Functor categories:
+open import Cat.Instances.Functor
+open import Cat.Instances.Functor.Limits -- Co/limits in functor categories
+open import Cat.Instances.Functor.Duality -- 2-cell duality in Cat
+
+-- Completion of a category under splitting idempotents
+open import Cat.Instances.Karoubi
+
+open import Cat.Instances.Lift -- Lifting a category to higher universes
+open import Cat.Instances.Product -- Product categories
+
+-- The category of sets
+open import Cat.Instances.Sets -- is univalent
+open import Cat.Instances.Sets.Complete -- is complete
+open import Cat.Instances.Sets.Cocomplete -- is cocomplete, with disjoint coproducts
+open import Cat.Instances.Sets.Congruences -- has effective congruences
+open import Cat.Instances.Sets.CartesianClosed -- and is locally cartesian closed
+
+-- Diagram shapes:
+open import Cat.Instances.Shape.Join
+open import Cat.Instances.Shape.Cospan
+open import Cat.Instances.Shape.Interval
+open import Cat.Instances.Shape.Parallel
+open import Cat.Instances.Shape.Terminal
+
+-- Slice categories:
+open import Cat.Instances.Slice
+open import Cat.Instances.Slice.Presheaf -- PSh(C)/X ≅ PSh(∫ X)
+
+-- Strict categories
+open import Cat.Instances.StrictCat
+open import Cat.Instances.StrictCat.Cohesive
+  -- ^ Strict category structure is a sort of "spatial" structure on a category
+```
+
+## Thin categories
+
+Strict thin categories are a presentation of pre-ordered sets, i.e. sets
+equipped with a transitive and reflexive relation --- so we call them
+"prosets". When this relation is antisymmetric, we additionally have a
+_univalent_ thin strict category --- so we call these "posets".
+
+```agda
+open import Cat.Thin            -- Basics of thin categories
+open import Cat.Thin.Limits     -- Limits in thin categories
+open import Cat.Thin.Completion -- Free poset on a proset
+```
+
+## Displayed categories
+
+We also have a work-in-progress formalisation of [Foundations of
+Relative Category Theory][frct], in which the core idea is thinking of
+"categories over categories".
+
+[frct]: https://www.jonmsterling.com/math/lectures/categorical-foundations.html
+
+```agda
+open import Cat.Displayed.Base             -- Displayed categories
+open import Cat.Displayed.Total            -- Total category of a displayed category
+open import Cat.Displayed.Cartesian        -- Cartesian lifts, cartesian fibrations
+open import Cat.Displayed.Instances.Family -- Family fibration
+open import Cat.Displayed.Instances.Slice  -- Canonical self-indexing
+```
+
+# Topos theory
+
+Grothendieck topos theory developed constructively and predicatively.
+
+```agda
+open import Topoi.Base       -- Topoi, properties of topoi, geometric morphisms
+open import Topoi.Reasoning  -- Exactness properties of topoi (cont'd), reasoning
+open import Topoi.Classifying.Diaconescu
+-- ^ Presheaf topoi classify flat functors on their site
+```
 
 # Algebra
 
@@ -295,19 +440,21 @@ algebraic structure comes with an associated proof that it is univalent
 instance).
 
 ```agda
-open import Algebra.Magma                      -- Binary operations 
+open import Algebra.Magma                      -- Binary operations
 open import Algebra.Magma.Unital               -- Operations with two-sided units
 open import Algebra.Magma.Unital.EckmannHilton -- The Eckmann-Hilton argument
 
 open import Algebra.Semigroup   -- Semigroups (associative magmas)
 open import Algebra.Monoid      -- Monoids as unital semigroups
 
-open import Algebra.Group                   -- Groups as monoids with inverses
-open import Algebra.Group.Free              -- Free groups
-open import Algebra.Group.Cayley            -- Cayley's theorem
-open import Algebra.Group.Homotopy          -- Homotopy groups
-open import Algebra.Group.Subgroup          -- Subgroups; Images and kernels
-open import Algebra.Group.Quotients         -- Quotients by normal subgroups
-open import Algebra.Group.Ab.Free           -- Abelianisations
-open import Algebra.Group.Quotients.IsoThms -- Isomorphism theorems
+open import Algebra.Group                      -- Groups as monoids with inverses
+open import Algebra.Group.Free                 -- Free groups
+open import Algebra.Group.Cayley               -- Cayley's theorem
+open import Algebra.Group.Cat.Base             -- Category of groups
+open import Algebra.Group.Cat.FinitelyComplete -- Finite limits in Groups
+open import Algebra.Group.Homotopy             -- Homotopy groups
+open import Algebra.Group.Subgroup             -- Subgroups, images and kernels
+
+open import Algebra.Group.Ab -- Abelian groups, and the category Ab
+open import Algebra.Group.Ab.Free -- The free abelian group on a group
 ```

@@ -6,11 +6,15 @@ open import Algebra.Semigroup
 open import Algebra.Lattice
 open import Algebra.Magma
 
+open import Cat.Diagram.Coproduct.Indexed
+open import Cat.Diagram.Product.Indexed
+open import Cat.Diagram.Colimit.Base
+open import Cat.Diagram.Limit.Base
+open import Cat.Thin.Limits
+open import Cat.Thin
+
 open import Data.Power
 open import Data.Sum
-
-open import Order.Proset
-open import Order.Poset
 
 module Data.Power.Lattice where
 ```
@@ -30,34 +34,27 @@ Antisymmetry for this relation is exactly the `principle of
 extensionality for subsets`{.Agda ident=ℙ-ext}.
 
 ```agda
-ℙ⊆ : ∀ {ℓ} → Type ℓ → Poset ℓ (lsuc ℓ)
-ℙ⊆ A .fst = ℙ A
-ℙ⊆ A .snd = st where
-  open PosetOn
-  open isPartialOrder
-  open isPreorder
-
-  st : PosetOn (ℙ A)
-  st ._≤_ = _⊆_
-  st .hasIsPartialOrder .hasIsPreorder .reflexive _ x = x
-  st .hasIsPartialOrder .hasIsPreorder .transitive x⊆y y⊆z a a∈x = y⊆z a (x⊆y a a∈x)
-  st .hasIsPartialOrder .hasIsPreorder .propositional {y = y} =
-    isHLevelΠ 1 λ x → isHLevel→ 1 (y x .snd)
-  st .hasIsPartialOrder .antisym = ℙ-ext
+ℙ⊆ : ∀ {ℓ} → Type ℓ → Poset _ _
+ℙ⊆ A =
+  make-poset {A = ℙ A} {R = _⊆_}
+    (λ _ x → x)
+    (λ x⊆y y⊆z a a∈x → y⊆z a (x⊆y a a∈x))
+    ℙ-ext
+    λ {x} {y} → Π-is-hlevel 1 λ x → fun-is-hlevel 1 (y x .is-tr)
 ```
 
 Back on track, we equip intersection of subsets with the structure of a
 semilattice:
 
 ```agda
-∩-semilattice : ∀ {ℓ} {X : Type ℓ} → isSemilattice (_∩_ {X = X})
+∩-semilattice : ∀ {ℓ} {X : Type ℓ} → is-semilattice (_∩_ {X = X})
 ∩-semilattice = r where
-  open isSemilattice
-  open isSemigroup
+  open is-semilattice
+  open is-semigroup
 
-  r : isSemilattice _
-  r .hasIsSemigroup .hasIsMagma .hasIsSet = isSet-ℙ
-  r .hasIsSemigroup .associative =
+  r : is-semilattice _
+  r .has-is-semigroup .has-is-magma .has-is-set = ℙ-is-set
+  r .has-is-semigroup .associative =
     ℙ-ext (λ { x (a , b , c) → (a , b) , c })
           (λ { x ((a , b) , c) → a , b , c })
 
@@ -73,10 +70,10 @@ direction of the proof is a lot more annoying because of the truncation
 in `_∪_`{.Agda}, but it is essentially shuffling sums around:
 
 ```agda
-∪-semilattice : ∀ {ℓ} {X : Type ℓ} → isSemilattice (_∪_ {X = X})
+∪-semilattice : ∀ {ℓ} {X : Type ℓ} → is-semilattice (_∪_ {X = X})
 ∪-semilattice = r where
-  open isSemilattice
-  open isSemigroup
+  open is-semilattice
+  open is-semigroup
 ```
 
 To show that subset union is associative, we must "shuffle" coproducts
@@ -88,9 +85,9 @@ underlying coproduct, even though all of `P`, `Q`, and `R` are
 propositions.
 
 ```agda
-  r : isSemilattice _
-  r .hasIsSemigroup .hasIsMagma .hasIsSet = isSet-ℙ
-  r .hasIsSemigroup .associative =
+  r : is-semilattice _
+  r .has-is-semigroup .has-is-magma .has-is-set = ℙ-is-set
+  r .has-is-semigroup .associative =
     ℙ-ext (λ _ → ∥-∥-elim (λ _ → squash)
                  λ { (inl x) → inc (inl (inc (inl x)))
                    ; (inr x) → ∥-∥-elim (λ _ → squash)
@@ -124,7 +121,7 @@ direction, we inject it into the left summand for definiteness.
 
 ```agda
   r .idempotent {x = X} =
-    ℙ-ext (λ _ → ∥-∥-elim (λ _ → X _ .snd)
+    ℙ-ext (λ _ → ∥-∥-elim (λ _ → X _ .is-tr)
                  (λ { (inl x) → x
                     ; (inr x) → x }))
           λ _ x → inc (inl x)
@@ -139,26 +136,26 @@ absorb intersections.
 
 ∪-absorbs-∩ : ∀ {ℓ} {A : Type ℓ} {X Y : ℙ A} → X ∪ (X ∩ Y) ≡ X
 ∪-absorbs-∩ {X = X} {Y = Y} =
-  ℙ-ext (λ _ → ∥-∥-elim (λ x → X _ .snd)
+  ℙ-ext (λ _ → ∥-∥-elim (λ x → X _ .is-tr)
                (λ { (inl x∈X) → x∈X
                   ; (inr (x∈X , x∈Y)) → x∈X }))
-        λ _ x∈X → inc (inl x∈X) 
+        λ _ x∈X → inc (inl x∈X)
 ```
 
-This means that $\mathbb{P}(X), \cap, \cup$ assemble into a lattice,
+This means that $\bb{P}(X), \cap, \cup$ assemble into a lattice,
 which we call `Power`{.Agda}:
 
 ```agda
-open LatticeOn
-open isLattice
+open Lattice-on
+open is-lattice
 
-Power : ∀ {ℓ} (X : Type ℓ) → LatticeOn (ℙ X)
+Power : ∀ {ℓ} (X : Type ℓ) → Lattice-on (ℙ X)
 Power X ._L∧_ = _∩_
 Power X ._L∨_ = _∪_
-Power X .hasIsLattice .hasMeets = ∩-semilattice
-Power X .hasIsLattice .hasJoins = ∪-semilattice
-Power X .hasIsLattice .∧-absorbs-∨ {y = y} = ∩-absorbs-∪ {Y = y}
-Power X .hasIsLattice .∨-absorbs-∧ {y = y} = ∪-absorbs-∩ {Y = y}
+Power X .has-is-lattice .has-meets = ∩-semilattice
+Power X .has-is-lattice .has-joins = ∪-semilattice
+Power X .has-is-lattice .∧-absorbs-∨ {y = y} = ∩-absorbs-∪ {Y = y}
+Power X .has-is-lattice .∨-absorbs-∧ {y = y} = ∪-absorbs-∩ {Y = y}
 ```
 
 It remains to show that the covariant ordering induced by the
@@ -168,12 +165,16 @@ $(x ⊆ y) \leftrightarrow (x ≡ (x ∩ y))$.
 ```agda
 subset-∩ : ∀ {ℓ} {A : Type ℓ} {X Y : ℙ A} → (X ⊆ Y) ≃ (X ≡ (X ∩ Y))
 subset-∩ {X = X} {Y = Y} =
-  propExt (isHLevelΠ 1 λ x → isHLevel→ 1 (Y x .snd)) (isSet-ℙ _ _) to from where
+  prop-ext
+    (Π-is-hlevel 1 λ x → fun-is-hlevel 1 (Y x .is-tr))
+    (ℙ-is-set _ _)
+    to from
+  where
 ```
 
 In the "if" direction, suppose that $X \subseteq Y$. We show that $X ∩
-Y$ intersect to $X$ by extensionality of power sets: If $x \in X$ and $X
-\subseteq Y$ then $x \in Y$, so $x \in (X \cap Y)$. Conversely, if $x
+Y$ intersects to $X$ by extensionality of power sets: If $x \in X$ and
+$X \subseteq Y$ then $x \in Y$, so $x \in (X \cap Y)$. Conversely, if $x
 \in (X \cap Y)$, then $x \in X$, so we are done.
 
 ```agda
@@ -188,5 +189,59 @@ $X \subseteq Y$, so we are done.
 
 ```agda
     from : (X ≡ (X ∩ Y)) → X ⊆ Y
-    from path x x∈X = transport (ap fst (happly path x)) x∈X .snd
+    from path x x∈X = transport (ap ∣_∣ (happly path x)) x∈X .snd
+```
+
+## Completeness
+
+The lattice of powersets of a type is [complete], since it admits
+[arbitrary meets]. The meet of a family $F : I \to \bb{P}$ is the
+subset represented by $\{ i : (\forall x)\ i \in F(x) \}$, i.e., the set
+of elements present in _all_ the subsets in the family.
+
+[complete]: Cat.Diagram.Limit.Base.html#completeness
+[arbitrary meets]: Cat.Thin.Limits.html
+
+```agda
+module _ {ℓ} {X : Type ℓ} where
+  private module ℙ = Poset (ℙ⊆ X)
+  open Indexed-product
+
+  ℙ-indexed-meet
+    : ∀ {I : Type ℓ} (F : I → ℙ X)
+    → Indexed-product ℙ.underlying F
+  ℙ-indexed-meet F = ip where
+    ip : Indexed-product _ _
+    ip .ΠF i      = (∀ x → i ∈ F x) , Π-is-hlevel 1 λ x → F x i .is-tr
+    ip .π i x f   = f i
+    ip .has-is-ip = indexed-meet→indexed-product {P = ℙ.→Proset} _
+      λ f x b i → f i x b
+
+  ℙ-complete : is-complete ℓ ℓ ℙ.underlying
+  ℙ-complete = has-indexed-products→proset-is-complete {P = ℙ.→Proset} ℙ-indexed-meet
+```
+
+It is also [cocomplete], since it admits arbitrary indexed joins.  These
+are given, assuming $F$ is like above, by the subset $\{ i : (\exists
+x)\ i \in F(x) \}$. Note the use of $\exists$, rather than $\sum$: we
+need a proposition.
+
+[cocomplete]: Cat.Diagram.Colimit.Base.html#cocompleteness
+
+```agda
+  open Indexed-coproduct
+
+  ℙ-indexed-join
+    : ∀ {I : Type ℓ} (F : I → ℙ X)
+    → Indexed-coproduct ℙ.underlying F
+  ℙ-indexed-join F = ic where
+    ic : Indexed-coproduct _ _
+    ic .ΣF i      = (∃[ x ∈ _ ] (i ∈ F x)) , squash
+    ic .ι i x f   = inc (i , f)
+    ic .has-is-ic = indexed-join→indexed-coproduct {P = ℙ.→Proset} _
+      λ {B = B} f x → ∥-∥-elim (λ _ → B x .is-tr) (λ { (i , y) → f i x y })
+
+  ℙ-cocomplete : is-cocomplete ℓ ℓ ℙ.underlying
+  ℙ-cocomplete = has-indexed-coproducts→proset-is-cocomplete {P = ℙ.→Proset}
+    ℙ-indexed-join
 ```

@@ -16,7 +16,7 @@ private variable
 ```
 -->
 
-A **pushout** $Y +_X Z$ of $f : X \to Y$ and $g : X \to Z$ is the 
+A **pushout** $Y +_X Z$ of $f : X \to Y$ and $g : X \to Z$ is the
 dual construction to the [pullback]. Much like the [pullback] is a
 subobject of the [product], the pushout is a quotient object of the
 [coproduct]. The maps $f$ and $g$ tell us which parts of the [coproduct]
@@ -27,7 +27,7 @@ to identify.
 [coproduct]: Cat.Diagram.Coproduct.html
 
 ```agda
-record IsPushout {P} (f : Hom X Y) (i₁ : Hom Y P) (g : Hom X Z) (i₂ : Hom Z P)
+record is-pushout {P} (f : Hom X Y) (i₁ : Hom Y P) (g : Hom X Z) (i₂ : Hom Z P)
   : Type (o ⊔ ℓ) where
     field
       square     : i₁ ∘ f ≡ i₂ ∘ g
@@ -75,10 +75,10 @@ record Pushout (f : Hom X Y) (g : Hom X Z) : Type (o ⊔ ℓ) where
   field
     {coapex} : Ob
     i₁       : Hom Y coapex
-    i₂       : Hom Z coapex 
-    hasIsPo  : IsPushout f i₁ g i₂
+    i₂       : Hom Z coapex
+    has-is-po  : is-pushout f i₁ g i₂
 
-  open IsPushout hasIsPo public
+  open is-pushout has-is-po public
 ```
 
 

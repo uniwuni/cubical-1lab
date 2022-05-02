@@ -25,23 +25,32 @@ morphisms between them. An example is the category of abelian groups, as
 a full subcategory of groups: being abelian is a proposition (there's
 "at most one way for a group to be abelian").
 
-[predicate]: 1Lab.HLevel.html#isProp
+[predicate]: 1Lab.HLevel.html#is-prop
 
 We can interpret full subcategories, by analogy, as being the "induced
 subgraphs" of the categorical world: Keep only some of the vertices
 (objects), but all of the arrows (arrows) between them.
 
 ```agda
-Restrict : (P : C.Ob → Type ℓ) → (∀ x → isProp (P x))
+record Restrict-ob (P : C.Ob → Type ℓ) : Type (o ⊔ ℓ) where
+  no-eta-equality
+  constructor _,_
+  field
+    object : C.Ob
+    witness : P object
+
+open Restrict-ob public
+
+Restrict : (P : C.Ob → Type ℓ)
          → Precategory (o ⊔ ℓ) h
-Restrict P pprop .Ob = Σ[ c ∈ C.Ob ] (P c)
-Restrict P pprop .Hom (A , _) (B , _) = C.Hom A B
-Restrict P pprop .Hom-set _ _ = C.Hom-set _ _
-Restrict P pprop .id    = C.id
-Restrict P pprop ._∘_   = C._∘_
-Restrict P pprop .idr   = C.idr
-Restrict P pprop .idl   = C.idl
-Restrict P pprop .assoc = C.assoc
+Restrict P .Ob = Restrict-ob P
+Restrict P .Hom A B = C.Hom (A .object) (B .object)
+Restrict P .Hom-set _ _ = C.Hom-set _ _
+Restrict P .id    = C.id
+Restrict P ._∘_   = C._∘_
+Restrict P .idr   = C.idr
+Restrict P .idl   = C.idl
+Restrict P .assoc = C.assoc
 ```
 
 A very important property of full subcategories (`Restrict`{.Agda}ions)
@@ -53,9 +62,9 @@ morphisms in the full subcategory coincide with those of $\ca{C}$, any
 iso in the subcategory is an iso in $\ca{C}$, thus a path!
 
 ```agda
-module _ (P : C.Ob → Type ℓ) (pprop : ∀ x → isProp (P x)) 
+module _ (P : C.Ob → Type ℓ) (pprop : ∀ x → is-prop (P x))
   where
-  import Cat.Reasoning (Restrict P pprop) as R
+  import Cat.Reasoning (Restrict P) as R
 ```
 
 We begin by translating between isomorphisms in the subcategory (called
@@ -63,12 +72,12 @@ $\ca{R}$ here) and in $\ca{C}$, which can be done by destructuring and
 reassembling:
 
 ```agda
-  isoSub→isoSuper : ∀ {A B : Σ P} → (A R.≅ B) → (A .fst C.≅ B .fst)
-  isoSub→isoSuper x = C.makeIso x.to x.from x.invˡ x.invʳ
+  sub-iso→super-iso : ∀ {A B : Restrict-ob P} → (A R.≅ B) → (A .object C.≅ B .object)
+  sub-iso→super-iso x = C.make-iso x.to x.from x.invl x.invr
     where module x = R._≅_ x
 
-  isoSuper→isoSub : ∀ {A B : Σ P} → (A .fst C.≅ B .fst) → (A R.≅ B) 
-  isoSuper→isoSub y = R.makeIso y.to y.from y.invˡ y.invʳ
+  super-iso→sub-iso : ∀ {A B : Restrict-ob P} → (A .object C.≅ B .object) → (A R.≅ B)
+  super-iso→sub-iso y = R.make-iso y.to y.from y.invl y.invr
     where module y = C._≅_ y
 ```
 
@@ -78,24 +87,31 @@ the supercategory; Hence, since $\ca{C}$ is by assumption univalent, so
 is $\ca{R}$.
 
 ```agda
-  isCategory-Restrict : isCategory C → isCategory (Restrict P pprop)
-  isCategory-Restrict univ (A , p) = isHLevel≃ 0 equiv (univ A)
+  Restrict-is-category : is-category C → is-category (Restrict P)
+  Restrict-is-category univ pb = is-hlevel≃ 0 equiv (univ A)
     where
-      to : (Σ[ B ∈ C.Ob ] A C.≅ B) → (Σ[ B ∈ R.Ob ] (A , p) R.≅ B)
-      to (B , isom) = (B , subst P A≡B p) , isoSuper→isoSub isom
-        where A≡B = isoToPath C univ isom
+      A = pb .object
+      p = pb .witness
 
-      from : (Σ[ B ∈ R.Ob ] (A , p) R.≅ B) → (Σ[ B ∈ C.Ob ] A C.≅ B)
-      from ((B , _) , isom) = B , isoSub→isoSuper isom
+      to : (Σ[ B ∈ C.Ob ] A C.≅ B) → (Σ[ B ∈ R.Ob ] pb R.≅ B)
+      to (B , isom) = (B , subst P A≡B p) , super-iso→sub-iso isom
+        where A≡B = iso→path C univ isom
 
-      rinv : isRightInverse from to
-      rinv (x , i) = Σ-PathP (Σ≡Prop pprop refl) (R.≅-PathP _ _ refl refl)
+      from : (Σ[ B ∈ R.Ob ] pb R.≅ B) → (Σ[ B ∈ C.Ob ] A C.≅ B)
+      from (B , isom) = B .object , sub-iso→super-iso isom
 
-      linv : isLeftInverse from to
-      linv (x , i) = Σ-PathP refl (C.≅-PathP _ _ refl refl)
+      rinv : is-right-inverse from to
+      rinv pb = Σ-pathp path (R.≅-pathp _ _ refl) where
+        path : to (from pb) .fst ≡ pb .fst
+        path i .object = pb .fst .object
+        path i .witness = is-prop→pathp (λ _ → pprop (pb .fst .object))
+          (to (from pb) .fst .witness) (pb .fst .witness) i
 
-      equiv : (Σ[ B ∈ C.Ob ] A C.≅ B) ≃ (Σ[ B ∈ R.Ob ] (A , p) R.≅ B)
-      equiv = to , isIso→isEquiv (iso from rinv linv)
+      linv : is-left-inverse from to
+      linv (x , i) = Σ-pathp refl (C.≅-pathp _ _ refl)
+
+      equiv : (Σ[ B ∈ C.Ob ] A C.≅ B) ≃ (Σ[ B ∈ R.Ob ] pb R.≅ B)
+      equiv = to , is-iso→is-equiv (iso from rinv linv)
 ```
 
 ## From full inclusions
@@ -109,12 +125,12 @@ the image of $F$.
 [fully faithful]: Cat.Functor.Base#ff-functors
 
 ```agda
-module _ {o' h'} {D : Precategory o' h'} {F : Functor D C} (ff : isFf F) where
+module _ {o' h'} {D : Precategory o' h'} {F : Functor D C} (ff : is-fully-faithful F) where
   open Functor F
 
-  FullInclusion→FullSubcat : Precategory _ _
-  FullInclusion→FullSubcat = 
-    Restrict (λ x → ∃[ d ∈ Ob D ] (F₀ d C.≅ x)) λ _ → squash
+  Full-inclusion→Full-subcat : Precategory _ _
+  Full-inclusion→Full-subcat =
+    Restrict (λ x → ∃[ d ∈ Ob D ] (F₀ d C.≅ x))
 ```
 
 This canonical full subcategory is weakly equivalent to $\ca{D}$,
@@ -124,18 +140,19 @@ functor from $\ca{D}$. This functor is actually just $F$ again:
 [essentially surjective]: Cat.Functor.Base.html#essential-fibres
 
 ```agda
-  Ff-domain→FullSubcat : Functor D FullInclusion→FullSubcat
-  Ff-domain→FullSubcat .Functor.F₀ x = F₀ x , inc (x , C.idIso)
-  Ff-domain→FullSubcat .Functor.F₁ = F₁
-  Ff-domain→FullSubcat .Functor.F-id = F-id
-  Ff-domain→FullSubcat .Functor.F-∘ = F-∘
+  Ff-domain→Full-subcat : Functor D Full-inclusion→Full-subcat
+  Ff-domain→Full-subcat .Functor.F₀ x = F₀ x , inc (x , C.id-iso)
+  Ff-domain→Full-subcat .Functor.F₁ = F₁
+  Ff-domain→Full-subcat .Functor.F-id = F-id
+  Ff-domain→Full-subcat .Functor.F-∘ = F-∘
 
-  isFf-domain→FullSubcat : isFf Ff-domain→FullSubcat
-  isFf-domain→FullSubcat = ff
+  is-fully-faithful-domain→Full-subcat : is-fully-faithful Ff-domain→Full-subcat
+  is-fully-faithful-domain→Full-subcat = ff
 
-  isEso-domain→FullSubcat : isEso Ff-domain→FullSubcat
-  isEso-domain→FullSubcat (y , o) = 
-    ∥-∥-map (λ (preimg , isom) → preimg , isoSuper→isoSub _ (λ _ → squash) isom) o
+  is-eso-domain→Full-subcat : is-eso Ff-domain→Full-subcat
+  is-eso-domain→Full-subcat yo =
+    ∥-∥-map (λ (preimg , isom) → preimg , super-iso→sub-iso _ (λ _ → squash) isom)
+      (yo .witness)
 ```
 
 Up to weak equivalence, admitting a full inclusion is equivalent to
@@ -144,13 +161,13 @@ inclusion, given on objects by projecting the first component and on
 morphisms by the identity function.
 
 ```agda
-module _ {P : C.Ob → Type ℓ} {pprop : ∀ x → isProp (P x)} where
-  ForgetFullSubcat : Functor (Restrict P pprop) C
-  ForgetFullSubcat .Functor.F₀ = fst
-  ForgetFullSubcat .Functor.F₁ f = f
-  ForgetFullSubcat .Functor.F-id = refl
-  ForgetFullSubcat .Functor.F-∘ f g i = f C.∘ g
+module _ {P : C.Ob → Type ℓ} where
+  Forget-full-subcat : Functor (Restrict P) C
+  Forget-full-subcat .Functor.F₀ = object
+  Forget-full-subcat .Functor.F₁ f = f
+  Forget-full-subcat .Functor.F-id = refl
+  Forget-full-subcat .Functor.F-∘ f g i = f C.∘ g
 
-  isFf-ForgetFullSubcat : isFf ForgetFullSubcat
-  isFf-ForgetFullSubcat = idEquiv
+  is-fully-faithful-Forget-full-subcat : is-fully-faithful Forget-full-subcat
+  is-fully-faithful-Forget-full-subcat = id-equiv
 ```
