@@ -72,6 +72,16 @@ single morphism, we compute a _transformation of hom-spaces_:
   eval `id f      = f
   eval (f ↑) g    = f ∘ g
   eval (f `∘ g) h = eval f (eval g h)
+
+  eval-sound-k : (e : Expr B C) (f : Hom A B) → eval e id ∘ f ≡ eval e f
+  eval-sound-k `id f = idl _
+  eval-sound-k (x ↑) f = ap (_∘ f) (idr x)
+  eval-sound-k (f `∘ g) h =
+    eval f (eval g id) ∘ h      ≡⟨ ap (_∘ h) (sym (eval-sound-k f (eval g id))) ⟩
+    (eval f id ∘ eval g id) ∘ h ≡⟨ sym (assoc _ _ _) ⟩
+    eval f id ∘ eval g id ∘ h   ≡⟨ ap (_ ∘_) (eval-sound-k g h) ⟩
+    eval f id ∘ eval g h        ≡⟨ eval-sound-k f _ ⟩
+    eval (f `∘ g) h             ∎
 ```
 
 Working this out in a back-of-the-envelope calculation, one sees that
@@ -95,27 +105,9 @@ hypothesis, getting us to our goal.
 
 ```agda
   eval-sound (f `∘ g) =
-    eval f (eval g id)    ≡⟨ sym (lemma f (eval g id)) ⟩
+    eval f (eval g id)    ≡⟨ sym (eval-sound-k f (eval g id)) ⟩
     eval f id ∘ eval g id ≡⟨ ap₂ _∘_ (eval-sound f) (eval-sound g) ⟩
     embed (f `∘ g)        ∎
-    where
-```
-
-The helper lemma is a bit more general than I had promised, but it's
-also an argument by induction on expressions. It shows that we can
-replace "precomposition with `eval ... id`" with an application of
-`eval`{.Agda}.
-
-```agda
-      lemma : (e : Expr B C) (f : Hom A B) → eval e id ∘ f ≡ eval e f
-      lemma `id f = idl _
-      lemma (x ↑) f = ap (_∘ f) (idr x)
-      lemma (f `∘ g) h =
-        eval f (eval g id) ∘ h      ≡⟨ ap (_∘ h) (sym (lemma f (eval g id))) ⟩
-        (eval f id ∘ eval g id) ∘ h ≡⟨ sym (assoc _ _ _) ⟩
-        eval f id ∘ eval g id ∘ h   ≡⟨ ap (_ ∘_) (lemma g h) ⟩
-        eval f id ∘ eval g h        ≡⟨ lemma f (eval g h) ⟩
-        eval (f `∘ g) h             ∎
 ```
 
 We now have a general theorem for solving associativity and identity
@@ -123,8 +115,9 @@ problems! If two expressions compute the same transformation of
 hom-sets, then they represent the same morphism.
 
 ```agda
-  associate : (f g : Expr A B) → eval f id ≡ eval g id → embed f ≡ embed g
-  associate f g p = sym (eval-sound f) ·· p ·· eval-sound g
+  abstract
+    associate : (f g : Expr A B) → eval f id ≡ eval g id → embed f ≡ embed g
+    associate f g p = sym (eval-sound f) ·· p ·· eval-sound g
 ```
 
 # The cursed part
@@ -139,9 +132,9 @@ record CategoryNames : Type where
     is-∘  : Name → Bool
     is-id : Name → Bool
 
-buildMatcher : Name → Maybe Name → Name → Bool
-buildMatcher n nothing  x = n name=? x
-buildMatcher n (just m) x = or (n name=? x) (m name=? x)
+build-matcher : Name → Maybe Name → Name → Bool
+build-matcher n nothing  x = n name=? x
+build-matcher n (just m) x = or (n name=? x) (m name=? x)
 
 find-generic-names : Name → Name → Term → TC CategoryNames
 find-generic-names star id mon = do
@@ -149,12 +142,12 @@ find-generic-names star id mon = do
   ε-altName ← normalise (def id  (unknown h∷ unknown h∷ mon v∷ []))
   -- typeError (termErr ∘-altName ∷ termErr ε-altName ∷ [])
   returnTC record
-    { is-∘  = buildMatcher star (getName ∘-altName)
-    ; is-id = buildMatcher id  (getName ε-altName)
+    { is-∘  = build-matcher star (getName ∘-altName)
+    ; is-id = build-matcher id  (getName ε-altName)
     }
 
-findCategoryNames : Term → TC CategoryNames
-findCategoryNames = find-generic-names (quote Precategory._∘_) (quote Precategory.id)
+find-category-names : Term → TC CategoryNames
+find-category-names = find-generic-names (quote Precategory._∘_) (quote Precategory.id)
 ```
 
 The trick above was stolen from the Agda standard library [monoid
@@ -207,22 +200,22 @@ looking at a composition.
     build-∘ (_ ∷ xs) = build-∘ xs
     build-∘ _ = unknown
 
-  getBoundary : Term → TC (Maybe (Term × Term))
-  getBoundary tm@(def (quote PathP) (_ h∷ T v∷ x v∷ y v∷ [])) = do
+  get-boundary : Term → TC (Maybe (Term × Term))
+  get-boundary tm@(def (quote PathP) (_ h∷ T v∷ x v∷ y v∷ [])) = do
     unify tm (def (quote _≡_) (x v∷ y v∷ []))
     returnTC (just (x , y))
-  getBoundary _ = returnTC nothing
+  get-boundary _ = returnTC nothing
 ```
 
 Then you essentially slap all of that together into a little macro.
 
 ```agda
-solveGeneric : (Term → TC CategoryNames) → (Term → Term) → Term → Term → TC ⊤
-solveGeneric find mkcat category hole = do
+solve-generic : (Term → TC CategoryNames) → (Term → Term) → Term → Term → TC ⊤
+solve-generic find mkcat category hole = do
   goal ← inferType hole >>= normalise
   names ← find category
 
-  just (lhs , rhs) ← getBoundary goal
+  just (lhs , rhs) ← get-boundary goal
     where nothing → typeError (strErr "Can't solve: " ∷ termErr goal ∷ [])
 
   let rep = build-expr names
@@ -232,7 +225,7 @@ solveGeneric find mkcat category hole = do
 
 macro
   solve : Term → Term → TC ⊤
-  solve = solveGeneric findCategoryNames (λ x → x)
+  solve = solve-generic find-category-names (λ x → x)
 ```
 
 ## Demo

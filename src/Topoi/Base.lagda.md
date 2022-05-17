@@ -70,8 +70,10 @@ which everything lives. Now, much of Grothendieck topos theory
 generalises to arbitrary "base" topoi, via the use of bounded geometric
 morphisms, but the "main" definition talks about $\sets$-topoi. In
 particular, every universe $\kappa$ generates a theory of
-$\sets_\kappa$-topoi, the categories of $\kappa$-small sheaves on
+$\sets_\kappa$-topoi, the categories of [$\kappa$-small] sheaves on
 $\kappa$-small sites.
+
+[$\kappa$-small]: 1Lab.intro.html#universes-and-size-issues
 
 Fix a universe level $\kappa$, and consider the category $\sets_\kappa$:
 A topos $\ca{T}$ might be a large category (i.e. it might have a space
@@ -164,7 +166,7 @@ glue against".
 [coyoneda lemma]: Cat.Functor.Hom.html#the-coyoneda-lemma
 
 Let's make this more concrete by considering an example: Take $\ca{C} =
-\bull \rightrightarrows \bull$, the category with two points --- let's
+\bull \tto \bull$, the category with two points --- let's
 call them $V$ and $E$ --- and two arrows $s, t : V \to E$. A presheaf
 $F$ on this category is given by a set $F_0(V)$, a set $F_0(E)$, and two
 functions $F_1(s), F_1(t) : F_0(E) \to F_0(V)$. We call $F_0(V)$ the

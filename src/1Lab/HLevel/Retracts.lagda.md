@@ -1,3 +1,10 @@
+---
+description: |
+  We establish that h-levels are closed under retractions, and use this
+  to establish many closure properties of h-levels. Then we table
+  these closure properties using Agda's instance resolution mechanism,
+  automating "boring" h-level obligations.
+---
 ```agda
 open import 1Lab.Path.Groupoid
 open import 1Lab.Type.Sigma
@@ -291,6 +298,13 @@ instance
     → ⦃ ∀ {x} → H-Level (S x) n ⦄
     → H-Level (∀ x → S x) n
   H-Level-pi {n = n} .H-Level.has-hlevel = Π-is-hlevel n λ _ → hlevel n
+
+  H-Level-⊤ : ∀ {n} → H-Level ⊤ n
+  H-Level-⊤ {n = zero} = hlevel-instance (contr tt (λ x i → tt))
+  H-Level-⊤ {n = suc n} = prop-instance λ x y i → tt
+
+  H-Level-⊥ : ∀ {n} → H-Level ⊥ (suc n)
+  H-Level-⊥ {n = n} = prop-instance λ x y → absurd x
 
   H-Level-pi′
     : ∀ {n} {S : T → Type ℓ}

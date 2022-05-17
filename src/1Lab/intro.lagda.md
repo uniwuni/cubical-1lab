@@ -347,11 +347,9 @@ _$\beta$-reducible expression_, but since we're not really interested in
 the theory of programming languages here, this terminology will not come
 up.
 
-[^newoldlang]: A [survey paper] of POPL proceedings by Guy L. Steele
-identified **twenty-eight** different notations for substitution, so the
-word "typical" is.. questionable, at best.
-
-[survey paper]: https://dl.acm.org/doi/abs/10.1145/3155284.3018773
+[^newoldlang]: A survey paper of POPL proceedings by Guy L. Steele
+[@Steele2017] identified **twenty-eight** different notations for
+substitution, so the word "typical" is.. questionable, at best.
 
 In addition, function types enjoy a definitional _uniqueness_ rule,
 which says "any function is a $\lambda$ expression". Symbolically, this
@@ -756,6 +754,103 @@ to be taken to the page where it is defined and explained.
   _ : ∀ {B : Type} → (Σ[ E ∈ Type ] (E → B)) ≃ (B → Type)
   _ = Fibration-equiv
 ```
+
+## Universes and size issues
+
+Perhaps one of the most famous paradoxes in the history of formal logic,
+[Russell's paradox] reminds us that, for most reasonable kinds of
+"collection" --- be they sets, types, or [categories] --- considering
+_the collection of all collections that do not contain themselves_ is a
+road that leads to madness. The standard way of getting around these
+issues, at least in set-theoretic foundations as applied to category
+theory, is to refer to such problematic collections as "[classes]", and to
+only axiomatise the _sets_ which are not too big.
+
+[classes]: https://ncatlab.org/nlab/show/proper+class
+
+In the branches of mathematics that Alexander Grothendieck influenced, a
+more common approach is to work instead with _Grothendieck universes_: A
+Grothendieck universe is a set $\ca{U}$ that forms a transitive model of
+ZF, closed under $\ca{U}$-small indexed products.  The classification of
+models of ZF implies that any Grothendieck universe $\ca{U}$ is
+equivalent to a segment of the [von Neumann universe] $\bf{V}_\kappa$,
+where $\kappa$ is a strongly inaccessible cardinal --- essentially, an
+upper bound on the size of the sets in $\ca{U}$.
+
+[von Neumann universe]: https://en.wikipedia.org/wiki/Von_Neumann_universe
+
+[Russell's paradox]: 1Lab.Counterexamples.Russell.html
+[categories]: Cat.Base.html
+
+In traditional mathematical writing, it is common to entirely ignore
+size issues, save perhaps for an offhand mention of Grothendieck
+universes (or strongly inaccessible cardinals) within the first few
+sections. Working in a proof assistant forces us to be honest about the
+size of our constructions: Correspondingly, we try to be precise in our
+prose as well. As mentioned above, Agda universes are stratified into a
+pair of hierarchies $\ty_\kappa$ and $\ty_{\omega+n}$, where we're using
+$\kappa$ to stand for a variable of `Level`{.Agda} type. The
+`Level`{.Agda} is a built-in type which contains a constant representing
+$0$, is closed under taking successors, and is closed under taking
+binary maxima.
+
+We refer to structured type (e.g. a category, or a group) as
+**$\kappa$-small** when its underlying type inhabits the $\kappa$th
+universe; For the specific case of categories, we also use the
+terminology **locally $\kappa$-small** to refer to the universe in which
+the family $\hom(-,-)$ lands. We use subscript Greek letters in prose to
+index our structures by their universe level. For example,
+$\sets_\kappa$ is the ($(1+\kappa)$-small, locally $\kappa$-small)
+category of $\kappa$-small sets.
+
+<details class=text>
+<summary>**Aside**: Small (hah!) note on small categories</summary>
+
+For those familiar with the notions of _internal_ and _enriched_
+categories, we might rephrase the _classical_ definitions of
+$\kappa$-small and locally $\kappa$-small categories as follows:
+
+- A category $\ca{C}$ is $\kappa$-small if it is an internal category in
+$\sets_\kappa$;
+
+- A category $\ca{C}$ is locally $\kappa$-small if it is enriched over
+the Cartesian monoidal category $\sets_\kappa$.
+
+Because every type is contained in some universe, we note that _every_
+category that appears in our development is locally $\kappa$-small for
+_some_ universe level $\kappa$. In particular, we have no "type of
+categories", but instead a type of "$\kappa$-small, locally
+$\lambda$-small categories".
+
+</details>
+
+**Warning**: Note that our use of the term "$\kappa$-small" is
+nonstandard. In set-theoretic foundations, where the only objects are
+sets anyway, this means "category internal to $\sets_\kappa$", as
+mentioned in the infobox above. In the 1Lab, the objects we manipulate
+are _higher groupoids_ rather than sets, and so very few categories will
+be internal to a category of sets. Instead, when we describe a category
+$\ca{C}$ is $\kappa$-small, we mean that the type of objects of $\ca{C}$
+is an inhabitant of the universe $\ty_\kappa$, and that the
+$\hom_\ca{C}(-,-)$ family is valued in $\sets_\kappa$. Our shorthand for
+the traditional notion is a "**[strict] $\kappa$-small**" category.
+
+[strict]: Cat.Instances.StrictCat.html
+
+<!--
+```agda
+_ : Type
+_ = Level
+```
+-->
+
+Our policy is to keep the use of universes "as precise as possible":
+Definitions are polymorphic over as many levels as they can possibly be,
+and they are always placed in the smallest universe in which they fit.
+This is, however, an iterative process: For example, our definition of
+"sheaf topos" was originally parametrised over 5 levels, but after
+formalising more desirable properties of topoi, we have found that the
+definition only really mentions two levels.
 
 # Interlude: Basics of Paths
 
@@ -1232,14 +1327,11 @@ However, an inhabitant of this type has a much more interesting
 _topological_ interpretation!
 
 <details open>
-<summary>
-**Worked example**: Interpreting dependent sums as fibrations and
-dependent products as sections lets us derive topological
-interpretations for types.
-
-We show how to do this for the type $(x\ y : A) \to x \equiv y$, and
-show that a space $A$ admitting an inhabitant of this type has the
-property of being "contractible if inhabited".
+<summary>**Worked example**: Interpreting dependent sums as fibrations
+and dependent products as sections lets us derive topological
+interpretations for types. We show how to do this for the type $(x\ y :
+A) \to x \equiv y$, and show that a space $A$ admitting an inhabitant of
+this type has the property of "being contractible if it is inhabited".
 </summary>
 
 First, we'll shuffle the type so that we can phrase it in terms of a
@@ -1265,11 +1357,12 @@ endpoints of a path --- so we will write it $(d_0,d_1) : A^\bb{I}
 \to A \times A$, since it is the pairing of the maps which evaluate a
 path at the left and right endpoints of the interval.
 
-As a very quick aside, there is a map $r : \lambda x.\ (x, x,
-\id{refl})$, we get a diagram like the one below, expressing that
-the diagonal $A \to A \times A$ can be factored as a weak equivalence
-follwed by a fibration, exhibiting $A^\bb{I}$ as a path space object
-for $A$.
+As a very quick aside, there is a map $r : \lambda x.\ (x, x, \id{refl}$
+making the diagram below commute. This diagram expresses that the
+diagonal $A \to A \times A$ can be factored as a weak equivalence
+follwed by a fibration through $A^\bb{I}$, which is the defining
+property of a _path space object_.
+$A$.
 
 $$
 A \xrightarrow{\~r} A^\bb{I} \xrightarrow{(d0,d1)} \to A \times A
@@ -1279,8 +1372,8 @@ A section of this fibration --- that is, a dependent function like $f$
 --- is then a _continuous_ function $A \times A \to A^\bb{I}$, with
 the property that $(d_0,d_1) \circ f = \id{id}$. Now assume that our
 space $A$ is pointed, say with a point $y_0 : A$, and that we have a
-section $f$. We can then define the homotopy $ (x,t) \mapsto f(x,y_0,t)
-$, mapping between the identity function on $A$ and the constant
+section $f$. We can then define the homotopy $(x,t) \mapsto f(x,y_0,t)$,
+mapping between the identity function on $A$ and the constant
 function at $y_0$, exhbiting the space $A$ as contractible.
 
 If you assume the law of excluded middle, every space is either pointed
@@ -1298,7 +1391,7 @@ is not organised like this. It's meant to be an _explorable_
 presentation of HoTT, where concepts can be accessed in any order, and
 everything is hyperlinked together. However, we can highlight the
 following modules as being the "spine" of the development, since
-everything depends on them, and they're roughly linearly ordered.
+everything depends on them, and they're roughly linearly ordered.\\\
 
 ## Paths, in detail
 

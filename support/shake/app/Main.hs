@@ -1,28 +1,21 @@
 {-# LANGUAGE BlockArguments, OverloadedStrings, RankNTypes #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, TypeFamilies, FlexibleContexts #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE TypeFamilies, FlexibleContexts #-}
 module Main (main) where
 
-import Control.Monad.Error.Class
 import Control.Monad.IO.Class
 import Control.Monad.Writer
 
-import qualified Data.ByteString.Lazy as LazyBS
-import qualified Data.Text.Encoding as Text
 import qualified Data.Text.IO as Text
 import qualified Data.Map.Lazy as Map
 import qualified Data.Text as Text
 import qualified Data.Set as Set
-import Data.Digest.Pure.SHA
 import Data.Map.Lazy (Map)
-import Data.Generics
 import Data.Foldable
 import Data.Maybe
 import Data.Text (Text)
 import Data.List
 
 import Development.Shake.FilePath
-import Development.Shake.Classes
 import Development.Shake
 
 import Network.URI.Encode (decodeText)
@@ -30,11 +23,7 @@ import Network.URI.Encode (decodeText)
 import qualified System.Directory as Dir
 
 import Text.HTML.TagSoup
-import Text.DocTemplates
 
-import Text.Pandoc.Filter
-import Text.Pandoc.Walk
-import Text.Pandoc
 import Text.Printf
 
 import Agda.Interaction.FindFile (SourceFile(..))
@@ -47,8 +36,14 @@ import Agda.Utils.FileName
 import qualified System.Environment as Env
 import HTML.Backend
 import HTML.Base
-import System.IO hiding (readFile')
+import HTML.Emit
+import System.IO (IOMode(..), hPutStrLn, withFile)
 import Agda
+
+import Shake.Markdown
+import Shake.KaTeX
+import Shake.LinkGraph
+import Shake.Git
 
 {-
   Welcome to the Horror That Is 1Lab's Build Script.
@@ -58,8 +53,8 @@ import Agda
 main :: IO ()
 main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ do
   fileIdMap <- newCache parseFileIdents
-  gitCommit <- newCache gitCommit
-  gitAuthors <- newCache (gitAuthors (gitCommit ()))
+  gitRules
+  katexRules
 
   {-
     Write @_build/all-pages.agda@. This imports every module in the source tree
@@ -103,10 +98,8 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
 
     ismd <- liftIO $ Dir.doesFileExist (input <.> ".md")
 
-    gitCommit <- gitCommit ()
-
     if ismd
-      then buildMarkdown gitCommit gitAuthors (input <.> ".md") out
+      then buildMarkdown (input <.> ".md") out
       else liftIO $ Dir.copyFile (input <.> ".html") out
 
   {-
@@ -133,15 +126,19 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
     (start, act) <- runWriterT $ findLinks (tell . Set.singleton) . parseTags
       =<< liftIO (readFile "_build/html1/all-pages.html")
     need (Set.toList act)
-    liftIO . withFile out WriteMode $ \h -> do
+    traced "crawling links" . withFile out WriteMode $ \h -> do
       hPutStrLn h "["
       crawlLinks
         (\x o -> liftIO $ hPrintf h "[%s, %s],"
           (show (dropExtension x))
           (show (dropExtension o)))
         (const (pure ()))
-        start
+        (Set.toList start)
       hPutStrLn h "null]"
+
+  "_build/html/static/search.json" %> \out -> do
+    need ["_build/html1/all-pages.html"]
+    copyFile' "_build/all-types.json" out
 
   -- Compile Quiver to SVG. This is used by 'buildMarkdown'.
   "_build/html/*.svg" %> \out -> do
@@ -151,11 +148,9 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
       ["support/build-diagram.sh", out, inp]
     removeFilesAfter "." ["rubtmp*"]
 
-  latexRules
-
   "_build/html/css/*.css" %> \out -> do
-    let inp = "support/web/" </> takeFileName out -<.> "scss"
-    need [inp, "support/web/vars.scss", "support/web/mixins.scss"]
+    let inp = "support/web/css/" </> takeFileName out -<.> "scss"
+    getDirectoryFiles "support/web/css" ["**/*.scss"] >>= \files -> need ["support/web/css" </> f | f <- files]
     command_ [] "sassc" [inp, out]
 
   "_build/html/favicon.ico" %> \out -> do
@@ -168,9 +163,16 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
     traced "copying" $ Dir.copyFile inp out
 
   "_build/html/*.js" %> \out -> do
-    let inp = "support/web" </> takeFileName out
-    need [inp]
-    traced "copying" $ Dir.copyFile inp out
+    getDirectoryFiles "support/web/js" ["**/*.ts", "**/*.tsx"] >>= \files -> need ["support/web/js" </> f | f <- files]
+
+    let inp = "support/web/js" </> takeFileName out -<.> "ts"
+    command_ [] "node_modules/.bin/esbuild"
+      [ "--bundle", inp
+      , "--outfile=" ++ out
+      , "--target=es2017"
+      , "--minify"
+      , "--sourcemap"
+      ]
 
   {-
     The final build step. This basically just finds all the files we actually
@@ -184,13 +186,17 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
            | file <- files
            ]
 
-    f1 <- getDirectoryFiles "support" ["**/*.scss"] >>= \files -> pure ["_build/html/css/" </> takeFileName f -<.> "css" | f <- files]
-    f2 <- getDirectoryFiles "support" ["**/*.js"] >>= \files -> pure ["_build/html/" </> takeFileName f | f <- files]
-    f3 <- getDirectoryFiles "support/static/" ["**/*"] >>= \files ->
+    static <- getDirectoryFiles "support/static/" ["**/*"] >>= \files ->
       pure ["_build/html/static" </> f | f <- files]
-    f4 <- getDirectoryFiles "_build/html0" ["Agda.*.html"] >>= \files ->
+    agda <- getDirectoryFiles "_build/html0" ["Agda.*.html"] >>= \files ->
       pure ["_build/html/" </> f | f <- files]
-    need $ [ "_build/html/favicon.ico", "_build/html/static/links.json" ] ++ f1 ++ f2 ++ f3 ++ f4
+    need $ [ "_build/html/favicon.ico"
+           , "_build/html/static/links.json"
+           , "_build/html/static/search.json"
+           , "_build/html/css/default.css"
+           , "_build/html/main.js"
+           , "_build/html/code-only.js"
+           ] ++ static ++ agda
 
   -- ???
 
@@ -201,12 +207,13 @@ main = shakeArgs shakeOptions{shakeFiles="_build", shakeChange=ChangeDigest} $ d
     need ["clean"]
     removeFilesAfter "_build" ["**/*.agdai", "*.lua"]
 
+  phony "typecheck-ts" do
+    getDirectoryFiles "support/web/js" ["**/*.ts", "**/*.tsx"] >>= \files -> need ["support/web/js" </> f | f <- files]
+    command_ [] "node_modules/.bin/tsc" ["--noEmit", "-p", "tsconfig.json"]
+
   -- Profit!
 
--- | Write a HTML file, correctly handling the closing of some tags.
-renderHTML5 :: [Tag Text] -> Text
-renderHTML5 = renderTagsOptions renderOptions{ optMinimize = min } where
-  min = flip elem ["br", "meta", "link", "img", "hr"]
+
 
 --------------------------------------------------------------------------------
 -- Various oracles
@@ -236,179 +243,6 @@ parseFileIdents mod =
            (Map.insert href name rev) xs
     go fwd rev (_:xs) = go fwd rev xs
     go fwd rev [] = (fwd, rev)
-
-
--- | Get the current git commit.
-gitCommit :: () -> Action String
-gitCommit () = do
-  Stdout t <- command [] "git" ["rev-parse", "--verify", "HEAD"]
-  pure (head (lines t))
-
--- | Get the authors for a particular commit.
-gitAuthors :: Action String -> FilePath -> Action [Text]
-gitAuthors commit path = do
-  _commit <- commit -- We depend on the commit, but don't actually need it.
-
-  -- Sort authors list and make it unique.
-  Stdout authors <- command [] "git" ["log", "--format=%aN", "--", path]
-  let authorSet = Set.fromList . Text.lines . Text.decodeUtf8 $ authors
-
-  Stdout coauthors <-
-    command [] "git" ["log", "--format=%(trailers:key=Co-authored-by,valueonly)", "--", path]
-
-  let
-    coauthorSet = Set.fromList
-      . map dropEmail
-      . filter (not . Text.null . Text.strip)
-      . Text.lines
-      . Text.decodeUtf8 $ coauthors
-
-    dropEmail = Text.unwords . init . Text.words
-
-  pure . Set.toList $ authorSet <> coauthorSet
-
---------------------------------------------------------------------------------
--- Markdown Compilation
---------------------------------------------------------------------------------
-
-{-| Convert a markdown file to templated HTML.
-
-After parsing the markdown, we perform the following post-processing steps:
-  - Run @agda-reference-filter@ on the parsed Markdown.
-  - Put inline equations (@$...$@) in a special @<span>@ to avoid word wrapping.
-  - Add header links to each header.
-  - For each quiver diagram, write its contents to @_build/diagrams/DIGEST.tex@
-    and depend on @_build/html/DIGEST.svg@. This kicks off another build step
-    which runs @support/build-diagram.sh@ to build the SVG.
-  - For each equation, invoke katex to compile them to HTML. This is cached
-    between runs (search for 'LatexEquation' in 'main').
-  - Fetch all git authors for this file and add it to the template info.
-
-Finally, we emit the markdown to HTML using the @support/web/template.html@
-template, pipe the output of that through @agda-fold-equations@, and write
-the file.
--}
-buildMarkdown :: String
-              -> (FilePath -> Action [Text])
-              -> FilePath -> FilePath -> Action ()
-buildMarkdown gitCommit gitAuthors input output = do
-  let
-    templateName = "support/web/template.html"
-    modname = dropDirectory1 (dropDirectory1 (dropExtension input))
-
-  need [templateName, input]
-
-  modulePath <- findModule modname
-  authors <- gitAuthors modulePath
-  let
-    permalink = gitCommit </> modulePath
-
-    title
-      | length modname > 24 = '…':reverse (take 24 (reverse modname))
-      | otherwise = modname
-
-  Pandoc meta markdown <- liftIO do
-    contents <- Text.readFile input
-    either (fail . show) pure =<< runIO do
-      md <- readMarkdown def { readerExtensions = getDefaultExtensions "markdown" } [(input, contents)]
-      applyFilters def [JSONFilter "agda-reference-filter"] ["html"] md
-
-  let
-    htmlInl = RawInline (Format "html")
-
-    -- | Replace any expression $foo$-bar with <span ...>$foo$-bar</span>, so that
-    -- the equation is not split when word wrapping.
-    patchInlines (m@Math{}:s@(Str txt):xs)
-      | not (Text.isPrefixOf " " txt)
-      = htmlInl "<span style=\"white-space: nowrap;\">" : m : s : htmlInl "</span>"
-      : patchInlines xs
-    patchInlines (x:xs) = x:patchInlines xs
-    patchInlines [] = []
-
-    -- Make all headers links, and add an anchor emoji.
-    patchBlock (Header i a@(ident, _, _) inl) = pure $ Header i a
-      $ htmlInl (Text.concat ["<a href=\"#", ident, "\" class=\"header-link\">"])
-      : inl
-      ++ [htmlInl "<span class=\"header-link-emoji\">🔗</span></a>"]
-    -- Replace quiver code blocks with a link to an SVG file, and depend on the SVG file.
-    patchBlock (CodeBlock (id, classes, attrs) contents) | "quiver" `elem` classes = do
-      let
-        digest = showDigest . sha1 . LazyBS.fromStrict $ Text.encodeUtf8 contents
-        title = fromMaybe "commutative diagram" (lookup "title" attrs)
-      liftIO $ Text.writeFile ("_build/diagrams" </> digest <.> "tex") contents
-      tell ["_build/html" </> digest <.> "svg"]
-
-      pure $ Div ("", ["diagram-container"], [])
-        [ Plain [ Image (id, "diagram":classes, attrs) [] (Text.pack (digest <.> "svg"), title) ]
-        ]
-    patchBlock h = pure h
-
-    patchInline (Math DisplayMath contents) = htmlInl <$> askOracle (LatexEquation (True, contents))
-    patchInline (Math InlineMath contents) = htmlInl <$> askOracle (LatexEquation (False, contents))
-    patchInline h = pure h
-
-    mStr = MetaString . Text.pack
-    patchMeta = Meta . Map.insert "title" (mStr title) . Map.insert "source" (mStr permalink) . unMeta
-
-  liftIO $ Dir.createDirectoryIfMissing False "_build/diagrams"
-
-  markdown <- pure . walk patchInlines . Pandoc (patchMeta meta) $ markdown
-  markdown <- walkM patchInline markdown
-  (markdown, dependencies) <- runWriterT $ walkM patchBlock markdown
-  need dependencies
-
-  text <- liftIO $ either (fail . show) pure =<< runIO do
-    template <- getTemplate templateName >>= runWithPartials . compileTemplate templateName
-                >>= either (throwError . PandocTemplateError . Text.pack) pure
-    let
-      authors' = case authors of
-        [] -> "Nobody"
-        [x] -> x
-        _ -> Text.intercalate ", " (init authors) `Text.append` " and " `Text.append` last authors
-
-      context = Context $ Map.fromList
-                [ (Text.pack "is-index", toVal (modname == "index"))
-                , (Text.pack "authors", toVal authors')
-                ]
-      options = def { writerTemplate = Just template
-                    , writerTableOfContents = True
-                    , writerVariables = context
-                    , writerExtensions = getDefaultExtensions "html" }
-    writeHtml5String options markdown
-
-  liftIO $ Text.writeFile output text
-
-  command_ [] "agda-fold-equations" [output]
-
--- | Find the original Agda file from a 1Lab module name.
-findModule :: MonadIO m => String -> m FilePath
-findModule modname = do
-  let toPath '.' = '/'
-      toPath c = c
-  let modfile = "src" </> map toPath modname
-
-  exists <- liftIO $ Dir.doesFileExist (modfile <.> "lagda.md")
-  pure $ if exists
-    then modfile <.> "lagda.md"
-    else modfile <.> "agda"
-
-newtype LatexEquation = LatexEquation (Bool, Text) -- TODO: Less lazy instance
-  deriving (Show, Typeable, Eq, Hashable, Binary, NFData)
-
-type instance RuleResult LatexEquation = Text
-
--- | Compile a latex equation to a HTML string.
-latexRules :: Rules ()
-latexRules = versioned 1 do
-  _ <- addOracleCache \(LatexEquation (display, tex)) -> do
-    need [".macros"]
-
-    let args = ["-f", ".macros", "-t"] ++ ["-d" | display]
-        stdin = LazyBS.fromStrict $ Text.encodeUtf8 tex
-    Stdout out <- command [StdinBS stdin] "katex" args
-    pure . Text.stripEnd . Text.decodeUtf8 $ out
-
-  pure ()
 
 --------------------------------------------------------------------------------
 -- Additional HTML post-processing
@@ -451,43 +285,12 @@ checkMarkup _ _ = pure ()
 --------------------------------------------------------------------------------
 
 compileAgda :: FilePath -> String -> TCMT IO ()
-compileAgda path basepn = do
+compileAgda path _ = do
   skipTypes <- liftIO . fmap isJust . Env.lookupEnv $ "SKIP_TYPES"
   source <- parseSource . SourceFile =<< liftIO (absolute path)
+  basepn <- liftIO $ absolute "src/"
   cr <- typeCheckMain TypeCheck source
   modifyTCLens stBackends
-    (htmlBackend basepn defaultHtmlOptions{htmlOptGenTypes = not skipTypes}:)
+    (htmlBackend (filePath basepn) defaultHtmlOptions{htmlOptGenTypes = not skipTypes}:)
   callBackend "HTML" IsMain cr
 
---------------------------------------------------------------------------------
--- Generate all edges between pages
---------------------------------------------------------------------------------
-
-findLinks :: MonadIO m => (String -> m ()) -> [Tag String] -> m [String]
-findLinks cb (TagOpen "a" attrs:xs)
-  | Just href <- lookup "href" attrs = do
-    t <- liftIO $ Dir.doesFileExist ("_build/html1" </> href)
-    cb ("_build/html1" </> href)
-    if (t && Set.notMember href ignoreLinks)
-      then (href:) <$> findLinks cb xs
-      else findLinks cb xs
-findLinks k (_:xs) = findLinks k xs
-findLinks _ [] = pure []
-
-ignoreLinks :: Set.Set String
-ignoreLinks = Set.fromList [ "all-pages.html", "index.html" ]
-
-crawlLinks
-  :: MonadIO m'
-  => (forall m. MonadIO m => String -> String -> m ())
-  -> (String -> m' ())
-  -> [String]
-  -> m' ()
-crawlLinks link need = go mempty where
-  go _visitd [] = pure ()
-  go visited (x:xs)
-    | x `Set.member` visited = go visited xs
-    | otherwise = do
-      links <- findLinks need =<< fmap parseTags (liftIO (readFile ("_build/html1" </> x)))
-      for_ links $ \other -> link x other
-      go (Set.insert x visited) (links ++ xs)
